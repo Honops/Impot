@@ -1,1 +1,1834 @@
-herej
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoFisco — App Autónomo</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c14;
+    --bg2: #0d1420;
+    --bg3: #111928;
+    --border: #1e2d42;
+    --border2: #243448;
+    --text: #f0f4ff;
+    --text2: #7a90b0;
+    --text3: #3d5070;
+    --blue: #2563eb;
+    --blue2: #1d4ed8;
+    --blue-glow: rgba(37,99,235,0.15);
+    --green: #10b981;
+    --green-glow: rgba(16,185,129,0.12);
+    --red: #ef4444;
+    --red-glow: rgba(239,68,68,0.12);
+    --yellow: #f59e0b;
+    --yellow-glow: rgba(245,158,11,0.12);
+    --purple: #8b5cf6;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── LAYOUT ── */
+  .app {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+  }
+
+  .sidebar-logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-accent { color: var(--blue); }
+
+  .logo-sub {
+    font-size: 10px;
+    color: var(--text3);
+    margin-top: 3px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    border: 1px solid transparent;
+  }
+
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+
+  .nav-item.active {
+    background: var(--blue-glow);
+    color: #60a5fa;
+    border-color: rgba(37,99,235,0.25);
+  }
+
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+  .sidebar-bottom {
+    padding: 12px 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .user-info {
+    padding: 10px 12px;
+    margin-bottom: 4px;
+  }
+
+  .user-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .user-nif {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 1px;
+    font-family: monospace;
+  }
+
+  .lang-picker {
+    display: flex;
+    gap: 4px;
+    padding: 6px 12px;
+  }
+
+  .lang-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+
+  .lang-btn:hover { background: var(--bg3); }
+
+  .logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text3);
+    transition: all 0.15s;
+    border: none;
+    background: none;
+    width: 100%;
+    font-family: inherit;
+  }
+
+  .logout-btn:hover { color: var(--red); background: var(--red-glow); }
+
+  /* ── MAIN ── */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .main::-webkit-scrollbar { width: 4px; }
+  .main::-webkit-scrollbar-track { background: transparent; }
+  .main::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* ── PAGES ── */
+  .page { display: none; padding: 28px; }
+  .page.active { display: block; }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .page-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .page-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+
+  .btn-primary {
+    background: var(--blue);
+    color: white;
+  }
+
+  .btn-primary:hover { background: var(--blue2); transform: translateY(-1px); }
+
+  .btn-ghost {
+    background: var(--bg3);
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover { color: var(--text); border-color: var(--border2); }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+
+  /* ── GRID ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+
+  /* ── STAT CARDS ── */
+  .stat-card {
+    border-radius: 14px;
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    transition: transform 0.2s;
+  }
+
+  .stat-card:hover { transform: translateY(-2px); }
+
+  .stat-card.green { background: var(--green-glow); border-color: rgba(16,185,129,0.2); }
+  .stat-card.blue { background: var(--blue-glow); border-color: rgba(37,99,235,0.2); }
+  .stat-card.red { background: var(--red-glow); border-color: rgba(239,68,68,0.2); }
+  .stat-card.yellow { background: var(--yellow-glow); border-color: rgba(245,158,11,0.2); }
+
+  .stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .stat-label { font-size: 12px; color: var(--text2); font-weight: 500; }
+  .stat-icon { font-size: 18px; }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
+  .stat-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+  .stat-card.green .stat-value { color: var(--green); }
+  .stat-card.blue .stat-value { color: #60a5fa; }
+  .stat-card.red .stat-value { color: var(--red); }
+  .stat-card.yellow .stat-value { color: var(--yellow); }
+
+  /* ── ALERT ── */
+  .alert {
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .alert.yellow {
+    background: var(--yellow-glow);
+    border: 1px solid rgba(245,158,11,0.25);
+  }
+
+  .alert.green {
+    background: var(--green-glow);
+    border: 1px solid rgba(16,185,129,0.25);
+  }
+
+  .alert-text { font-size: 13px; }
+  .alert-title { font-weight: 600; color: var(--yellow); }
+  .alert.green .alert-title { color: var(--green); }
+  .alert-desc { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  .alert-action {
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    white-space: nowrap;
+    background: rgba(245,158,11,0.2);
+    color: var(--yellow);
+    transition: background 0.15s;
+  }
+
+  .alert-action:hover { background: rgba(245,158,11,0.3); }
+
+  /* ── DEADLINE CARDS ── */
+  .deadline-card {
+    border-radius: 14px;
+    padding: 18px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+  }
+
+  .deadline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .deadline-title { font-weight: 600; font-size: 14px; }
+  .deadline-date { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  .badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+  }
+
+  .badge-ok { background: var(--green-glow); color: var(--green); border: 1px solid rgba(16,185,129,0.25); }
+  .badge-warn { background: var(--yellow-glow); color: var(--yellow); border: 1px solid rgba(245,158,11,0.25); }
+  .badge-danger { background: var(--red-glow); color: var(--red); border: 1px solid rgba(239,68,68,0.25); }
+
+  .deadline-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .deadline-amount-label { font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+  .deadline-amount { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; }
+  .amount-pay { color: var(--red); }
+  .amount-ok { color: var(--green); }
+
+  .deadline-days { text-align: right; }
+  .deadline-days-label { font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+  .deadline-days-val { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--text); }
+
+  /* ── QUARTER GRID ── */
+  .quarter-card {
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .quarter-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+  .quarter-card.current { border-color: rgba(37,99,235,0.35); background: var(--blue-glow); }
+
+  .quarter-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .quarter-card.current .quarter-label { color: #60a5fa; }
+
+  .quarter-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+
+  .quarter-key { color: var(--text3); }
+  .quarter-val { font-weight: 600; }
+
+  .quarter-divider { border-top: 1px solid var(--border); margin: 6px 0; }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead tr {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    white-space: nowrap;
+  }
+
+  th.right { text-align: right; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg3); }
+
+  td {
+    padding: 14px 16px;
+    vertical-align: middle;
+  }
+
+  td.right { text-align: right; }
+
+  .type-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  .type-emitida { background: rgba(16,185,129,0.1); color: var(--green); }
+  .type-recibida { background: rgba(139,92,246,0.1); color: var(--purple); }
+
+  .status-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+  }
+
+  .status-draft { background: var(--yellow-glow); color: var(--yellow); }
+  .status-validated { background: var(--green-glow); color: var(--green); }
+  .status-locked { background: var(--blue-glow); color: #60a5fa; }
+
+  .action-btn {
+    padding: 5px 10px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    transition: all 0.15s;
+    margin-right: 4px;
+  }
+
+  .action-validate { background: rgba(16,185,129,0.15); color: var(--green); }
+  .action-validate:hover { background: rgba(16,185,129,0.25); }
+  .action-correct { background: var(--yellow-glow); color: var(--yellow); }
+  .action-correct:hover { background: rgba(245,158,11,0.25); }
+  .action-delete { background: var(--red-glow); color: var(--red); }
+  .action-delete:hover { background: rgba(239,68,68,0.25); }
+
+  .invoice-name { font-weight: 500; color: var(--text); }
+  .invoice-num { font-size: 11px; color: var(--text3); font-family: monospace; }
+
+  /* ── SEARCH BAR ── */
+  .search-wrap {
+    position: relative;
+    margin-bottom: 14px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3);
+    font-size: 14px;
+  }
+
+  .search-input {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px 10px 36px;
+    font-size: 13px;
+    color: var(--text);
+    font-family: inherit;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+
+  .search-input:focus { border-color: var(--blue); }
+  .search-input::placeholder { color: var(--text3); }
+
+  /* ── FILTER TABS ── */
+  .filter-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .filter-tab {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg2);
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+
+  .filter-tab:hover { color: var(--text); }
+
+  .filter-tab.active {
+    background: var(--blue);
+    color: white;
+    border-color: var(--blue);
+  }
+
+  .filter-count {
+    font-size: 10px;
+    background: rgba(255,255,255,0.15);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* ── DECLARATION CARD ── */
+  .decl-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 14px;
+  }
+
+  .decl-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .decl-title { font-weight: 700; font-size: 15px; }
+  .decl-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  .decl-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .decl-item {
+    background: var(--bg3);
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .decl-item-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  .decl-item-val { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+
+  .decl-result {
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .decl-result.pay { background: var(--red-glow); border: 1px solid rgba(239,68,68,0.2); }
+  .decl-result.ok { background: var(--green-glow); border: 1px solid rgba(16,185,129,0.2); }
+
+  .decl-result-label { font-size: 13px; font-weight: 600; }
+  .decl-result.pay .decl-result-label { color: var(--red); }
+  .decl-result.ok .decl-result-label { color: var(--green); }
+
+  .decl-result-amount { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
+  .decl-result.pay .decl-result-amount { color: var(--red); }
+  .decl-result.ok .decl-result-amount { color: var(--green); }
+
+  .decl-actions { display: flex; gap: 8px; }
+
+  /* ── GENERATE PANEL ── */
+  .gen-panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    position: sticky;
+    top: 0;
+  }
+
+  .gen-item {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+
+  .gen-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .gen-item-title { font-weight: 600; font-size: 14px; }
+  .gen-item-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  .gen-tip {
+    background: var(--bg3);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+
+  /* ── CONFIG PAGE ── */
+  .config-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .config-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+
+  .form-group { margin-bottom: 16px; }
+
+  .form-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .form-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .form-input:focus { border-color: var(--blue); }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  .plan-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .plan-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .plan-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; }
+  .plan-price { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  .plan-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    margin-top: 6px;
+  }
+
+  .plan-limit {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .plan-limit:last-child { border-bottom: none; }
+  .plan-limit-key { color: var(--text2); }
+  .plan-limit-val { font-weight: 600; }
+  .plan-limit-val.ok { color: var(--green); }
+  .plan-limit-val.warn { color: var(--yellow); }
+
+  /* ── MOBILE HEADER ── */
+  .mobile-header {
+    display: none;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+  }
+
+  .hamburger {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .hamburger span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: all 0.3s;
+  }
+
+  /* ── OVERLAY ── */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 90;
+    backdrop-filter: blur(2px);
+  }
+
+  .overlay.active { display: block; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: all 0.3s;
+    max-width: 320px;
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { border-color: rgba(16,185,129,0.3); }
+  .toast.success .toast-icon { color: var(--green); }
+
+  /* ── SCAN MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    width: 90%;
+    max-width: 460px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .modal-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+
+  .scan-zone {
+    border: 2px dashed var(--border2);
+    border-radius: 14px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+  }
+
+  .scan-zone:hover { border-color: var(--blue); background: var(--blue-glow); }
+  .scan-zone-icon { font-size: 48px; margin-bottom: 12px; }
+  .scan-zone-title { font-weight: 600; margin-bottom: 6px; }
+  .scan-zone-sub { font-size: 12px; color: var(--text2); }
+
+  .scan-manual {
+    text-align: center;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .scan-manual:hover { border-color: var(--border2); background: var(--bg3); }
+
+  .processing-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 13px;
+  }
+
+  .step-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+  }
+
+  .step-dot.done { background: var(--green); border-color: var(--green); color: white; }
+  .step-dot.active { border-color: var(--blue); animation: pulse 1s infinite; }
+  .step-dot.waiting { border-color: var(--border); }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  .modal-footer { display: flex; gap: 10px; margin-top: 20px; }
+
+  /* ── PRECIOS PAGE ── */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .pricing-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 24px;
+    transition: transform 0.2s;
+    position: relative;
+  }
+
+  .pricing-card:hover { transform: translateY(-3px); }
+
+  .pricing-card.featured {
+    border-color: rgba(37,99,235,0.4);
+    background: linear-gradient(135deg, rgba(37,99,235,0.08), var(--bg2));
+  }
+
+  .pricing-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--blue);
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .pricing-name { font-size: 13px; color: var(--text2); margin-bottom: 8px; font-weight: 600; }
+  .pricing-featured .pricing-name { color: #60a5fa; }
+
+  .pricing-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+
+  .pricing-period { font-size: 12px; color: var(--text3); margin-bottom: 20px; }
+
+  .pricing-feature {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    padding: 5px 0;
+    color: var(--text2);
+  }
+
+  .pricing-feature .check { color: var(--green); font-size: 13px; }
+  .pricing-feature .cross { color: var(--text3); font-size: 13px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .mobile-header { display: flex; }
+
+    .sidebar {
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      transform: translateX(-100%);
+      z-index: 150;
+    }
+
+    .sidebar.open { transform: translateX(0); }
+
+    .app { flex-direction: column; }
+
+    .main { height: calc(100vh - 56px); }
+
+    .page { padding: 16px; }
+
+    .grid-2 { grid-template-columns: 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+    .grid-4 { grid-template-columns: 1fr 1fr; }
+
+    .topbar { flex-direction: column; align-items: flex-start; }
+
+    .pricing-grid { grid-template-columns: 1fr; }
+
+    .decl-grid { grid-template-columns: 1fr; }
+
+    .gen-panel { position: static; }
+
+    .form-grid { grid-template-columns: 1fr; }
+
+    .toast { left: 16px; right: 16px; bottom: 16px; }
+  }
+
+  @media (max-width: 480px) {
+    .grid-3 { grid-template-columns: 1fr; }
+    .grid-4 { grid-template-columns: 1fr 1fr; }
+  }
+
+  .spacer-12 { height: 12px; }
+  .spacer-20 { height: 20px; }
+  .spacer-28 { height: 28px; }
+
+  .section-title {
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+  }
+
+  .year-selector { display: flex; gap: 6px; align-items: center; }
+  .year-label { font-size: 12px; color: var(--text2); }
+
+  .year-btn {
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text2);
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+
+  .year-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
+  .year-btn:hover:not(.active) { color: var(--text); }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text3);
+  }
+
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-title { font-size: 16px; font-weight: 600; color: var(--text2); margin-bottom: 8px; }
+  .empty-sub { font-size: 13px; margin-bottom: 20px; }
+
+  .confirmed-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--green-glow);
+    border: 1px solid rgba(16,185,129,0.25);
+    color: var(--green);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 20px;
+  }
+</style>
+</head>
+<body>
+
+<!-- OVERLAY MOBILE -->
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- MODAL SCAN -->
+<div class="modal-overlay" id="modalScan">
+  <div class="modal">
+    <div class="modal-title">Nueva factura</div>
+    <div class="modal-sub">Escanea o introduce manualmente</div>
+
+    <div id="scanStep1">
+      <div class="scan-zone" onclick="startScan()">
+        <div class="scan-zone-icon">📷</div>
+        <div class="scan-zone-title">Escanear factura</div>
+        <div class="scan-zone-sub">Sube una foto o PDF · Máx 10MB</div>
+      </div>
+      <div class="scan-manual" onclick="closeModal();showToast('✏️','Abriendo formulario manual...')">
+        <div style="font-size:20px;margin-bottom:6px">✏️</div>
+        <div style="font-weight:600;font-size:14px">Introducir manualmente</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Rellena los datos a mano</div>
+      </div>
+    </div>
+
+    <div id="scanStep2" style="display:none">
+      <div style="text-align:center;padding:20px 0 16px">
+        <div class="spinner" style="margin:0 auto 16px"></div>
+        <div style="font-weight:600;margin-bottom:20px">Analizando factura...</div>
+      </div>
+      <div class="processing-step">
+        <div class="step-dot done">✓</div>
+        <span style="color:var(--green)">Texto extraído con Google Vision</span>
+      </div>
+      <div class="processing-step">
+        <div class="step-dot active"></div>
+        <span>Interpretando datos fiscales con IA...</span>
+      </div>
+      <div class="processing-step">
+        <div class="step-dot waiting"></div>
+        <span style="color:var(--text3)">Calculando importes</span>
+      </div>
+    </div>
+
+    <div id="scanStep3" style="display:none">
+      <div class="alert green" style="margin-bottom:16px">
+        <div class="alert-text">
+          <div class="alert-title">✅ Datos extraídos con alta confianza (94%)</div>
+          <div class="alert-desc">Verifica y confirma antes de guardar</div>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Cliente / Proveedor</label>
+          <input class="form-input" value="Amazon Web Services">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input class="form-input" value="15/03/2026">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Base imponible</label>
+          <input class="form-input" value="450,00 €">
+        </div>
+        <div class="form-group">
+          <label class="form-label">IVA (21%)</label>
+          <input class="form-input" value="94,50 €">
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" id="modalMainBtn" style="flex:2" onclick="handleModalBtn()">Empezar escaneo</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app">
+
+  <!-- MOBILE HEADER -->
+  <div class="mobile-header">
+    <button class="hamburger" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="logo-text">Auto<span class="logo-accent">Fisco</span></div>
+    <div style="width:30px"></div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-text">Auto<span class="logo-accent">Fisco</span></div>
+      <div class="logo-sub">Gestión fiscal autónomos</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="showPage('dashboard',this)">
+        <span class="nav-icon">📊</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('facturas',this)">
+        <span class="nav-icon">🧾</span> Facturas
+      </div>
+      <div class="nav-item" onclick="showPage('declaraciones',this)">
+        <span class="nav-icon">📋</span> Declaraciones
+      </div>
+      <div class="nav-item" onclick="showPage('precios',this)">
+        <span class="nav-icon">💎</span> Planes
+      </div>
+      <div class="nav-item" onclick="showPage('configuracion',this)">
+        <span class="nav-icon">⚙️</span> Configuración
+      </div>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="user-info">
+        <div class="user-name">María García López</div>
+        <div class="user-nif">12345678Z</div>
+      </div>
+      <div class="lang-picker">
+        <button class="lang-btn" title="Español">🇪🇸</button>
+        <button class="lang-btn" title="English">🇬🇧</button>
+        <button class="lang-btn" title="Français">🇫🇷</button>
+      </div>
+      <button class="logout-btn">
+        <span>🚪</span> Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="page active" id="page-dashboard">
+
+      <div class="topbar">
+        <div>
+          <div class="page-title">Buenos días, María 👋</div>
+          <div class="page-sub">Trimestre 1 · 2026</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="year-selector">
+            <span class="year-label">Año:</span>
+            <button class="year-btn active">2026</button>
+            <button class="year-btn">2025</button>
+            <button class="year-btn">2024</button>
+          </div>
+          <button class="btn btn-primary" onclick="openModal()">+ Nueva factura</button>
+        </div>
+      </div>
+
+      <!-- Alert draft -->
+      <div class="alert yellow">
+        <div class="alert-text">
+          <div class="alert-title">⚠️ 3 facturas pendientes de verificar</div>
+          <div class="alert-desc">Las facturas en borrador no entran en tus cálculos fiscales</div>
+        </div>
+        <button class="alert-action" onclick="showPage('facturas',document.querySelectorAll('.nav-item')[1])">Verificar →</button>
+      </div>
+
+      <!-- Deadlines -->
+      <div class="section-title">Próximas declaraciones</div>
+      <div class="grid-2" style="margin-bottom:28px">
+        <div class="deadline-card">
+          <div class="deadline-header">
+            <div>
+              <div class="deadline-title">Modelo 303 — IVA</div>
+              <div class="deadline-date">Límite: 20 de abril de 2026</div>
+            </div>
+            <div class="badge badge-warn">⏰ Próximo</div>
+          </div>
+          <div class="deadline-footer">
+            <div>
+              <div class="deadline-amount-label">A ingresar</div>
+              <div class="deadline-amount amount-pay">847,50 €</div>
+            </div>
+            <div class="deadline-days">
+              <div class="deadline-days-label">Tiempo restante</div>
+              <div class="deadline-days-val">28 días</div>
+            </div>
+          </div>
+        </div>
+        <div class="deadline-card">
+          <div class="deadline-header">
+            <div>
+              <div class="deadline-title">Modelo 130 — IRPF</div>
+              <div class="deadline-date">Límite: 20 de abril de 2026</div>
+            </div>
+            <div class="badge badge-ok">✅ Al día</div>
+          </div>
+          <div class="deadline-footer">
+            <div>
+              <div class="deadline-amount-label">Pago fraccionado</div>
+              <div class="deadline-amount amount-ok">620,00 €</div>
+            </div>
+            <div class="deadline-days">
+              <div class="deadline-days-label">Tiempo restante</div>
+              <div class="deadline-days-val">28 días</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quarters -->
+      <div class="section-title">Resumen por trimestre — 2026</div>
+      <div class="grid-4" style="margin-bottom:28px">
+        <div class="quarter-card current">
+          <div class="quarter-label">T1 2026 <span style="font-size:10px;background:rgba(37,99,235,0.2);color:#60a5fa;padding:2px 8px;border-radius:10px;margin-left:4px">Actual</span></div>
+          <div class="quarter-row"><span class="quarter-key">Ingresos</span><span class="quarter-val" style="color:var(--green)">4.200 €</span></div>
+          <div class="quarter-row"><span class="quarter-key">Gastos</span><span class="quarter-val">1.050 €</span></div>
+          <div class="quarter-divider"></div>
+          <div class="quarter-row"><span class="quarter-key">IVA 303</span><span class="quarter-val" style="color:var(--red)">+847 €</span></div>
+        </div>
+        <div class="quarter-card">
+          <div class="quarter-label">T2 2026</div>
+          <div class="quarter-row"><span class="quarter-key">Ingresos</span><span class="quarter-val" style="color:var(--text3)">—</span></div>
+          <div class="quarter-row"><span class="quarter-key">Gastos</span><span class="quarter-val" style="color:var(--text3)">—</span></div>
+          <div class="quarter-divider"></div>
+          <div class="quarter-row"><span class="quarter-key">IVA 303</span><span class="quarter-val" style="color:var(--text3)">—</span></div>
+        </div>
+        <div class="quarter-card">
+          <div class="quarter-label">T3 2026</div>
+          <div class="quarter-row"><span class="quarter-key">Ingresos</span><span class="quarter-val" style="color:var(--text3)">—</span></div>
+          <div class="quarter-row"><span class="quarter-key">Gastos</span><span class="quarter-val" style="color:var(--text3)">—</span></div>
+          <div class="quarter-divider"></div>
+          <div class="quarter-row"><span class="quarter-key">IVA 303</span><span class="quarter-val" style="color:var(--text3)">—</span></div>
+        </div>
+        <div class="quarter-card">
+          <div class="quarter-label">T4 2026</div>
+          <div class="quarter-row"><span class="quarter-key">Ingresos</span><span class="quarter-val" style="color:var(--text3)">—</span></div>
+          <div class="quarter-row"><span class="quarter-key">Gastos</span><span class="quarter-val" style="color:var(--text3)">—</span></div>
+          <div class="quarter-divider"></div>
+          <div class="quarter-row"><span class="quarter-key">IVA 303</span><span class="quarter-val" style="color:var(--text3)">—</span></div>
+        </div>
+      </div>
+
+      <!-- Annual stats -->
+      <div class="section-title">Resumen anual — 2026</div>
+      <div class="grid-3" style="margin-bottom:28px">
+        <div class="stat-card green">
+          <div class="stat-header"><span class="stat-label">Ingresos totales</span><span class="stat-icon">💰</span></div>
+          <div class="stat-value">4.200 €</div>
+          <div class="stat-sub">Base imponible acumulada</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span class="stat-label">Gastos deducibles</span><span class="stat-icon">📉</span></div>
+          <div class="stat-value">1.050 €</div>
+          <div class="stat-sub">Base deducible acumulada</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-header"><span class="stat-label">Beneficio neto</span><span class="stat-icon">📊</span></div>
+          <div class="stat-value">3.150 €</div>
+          <div class="stat-sub">Ingresos menos gastos</div>
+        </div>
+      </div>
+
+      <!-- Invoice status -->
+      <div class="section-title">Estado de facturas</div>
+      <div class="grid-3">
+        <div class="stat-card yellow">
+          <div class="stat-header"><span class="stat-label">Borradores</span><span class="stat-icon">📝</span></div>
+          <div class="stat-value">3</div>
+          <div class="stat-sub">Pendientes de verificar</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-header"><span class="stat-label">Validadas</span><span class="stat-icon">✅</span></div>
+          <div class="stat-value">12</div>
+          <div class="stat-sub">Incluidas en cálculos</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-header"><span class="stat-label">Declaradas</span><span class="stat-icon">🔒</span></div>
+          <div class="stat-value">8</div>
+          <div class="stat-sub">En declaraciones enviadas</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── FACTURAS ── -->
+    <div class="page" id="page-facturas">
+
+      <div class="topbar">
+        <div>
+          <div class="page-title">Facturas</div>
+          <div class="page-sub">Gestiona y verifica tus facturas antes de declarar</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal()">+ Nueva factura</button>
+      </div>
+
+      <div class="alert yellow">
+        <div class="alert-text">
+          <div class="alert-title">⚠️ 3 facturas en borrador</div>
+          <div class="alert-desc">Valídalas para que entren en tus cálculos fiscales</div>
+        </div>
+      </div>
+
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" placeholder="Buscar por nombre, NIF, número de factura...">
+      </div>
+
+      <div class="filter-tabs">
+        <button class="filter-tab active">Todas <span class="filter-count">23</span></button>
+        <button class="filter-tab" onclick="setFilter(this)">Borradores <span class="filter-count">3</span></button>
+        <button class="filter-tab" onclick="setFilter(this)">Validadas <span class="filter-count">12</span></button>
+        <button class="filter-tab" onclick="setFilter(this)">Declaradas <span class="filter-count">8</span></button>
+        <button class="filter-tab" onclick="setFilter(this)">Emitidas <span class="filter-count">15</span></button>
+        <button class="filter-tab" onclick="setFilter(this)">Recibidas <span class="filter-count">8</span></button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Fecha</th>
+              <th>Cliente / Proveedor</th>
+              <th class="right">Base</th>
+              <th class="right">IVA</th>
+              <th class="right">Total</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="invoiceTable">
+            <tr>
+              <td><span class="type-badge type-emitida">↑ Emitida</span></td>
+              <td>20/03/2026</td>
+              <td><div class="invoice-name">Empresa Cliente S.L.</div><div class="invoice-num">F-2026-003</div></td>
+              <td class="right">1.500,00 €</td>
+              <td class="right">315,00 € <span style="color:var(--text3);font-size:10px">(21%)</span></td>
+              <td class="right" style="font-weight:700">1.815,00 €</td>
+              <td><span class="status-badge status-draft">Borrador</span></td>
+              <td>
+                <button class="action-btn action-validate" onclick="validateInvoice(this)">✓ Validar</button>
+                <button class="action-btn action-delete" onclick="deleteInvoice(this)">🗑</button>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="type-badge type-recibida">↓ Recibida</span></td>
+              <td>18/03/2026</td>
+              <td><div class="invoice-name">Amazon Web Services</div><div class="invoice-num">AWS-20260318</div></td>
+              <td class="right">450,00 €</td>
+              <td class="right">94,50 € <span style="color:var(--text3);font-size:10px">(21%)</span></td>
+              <td class="right" style="font-weight:700">544,50 €</td>
+              <td><span class="status-badge status-draft">Borrador</span></td>
+              <td>
+                <button class="action-btn action-validate" onclick="validateInvoice(this)">✓ Validar</button>
+                <button class="action-btn action-delete" onclick="deleteInvoice(this)">🗑</button>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="type-badge type-emitida">↑ Emitida</span></td>
+              <td>15/03/2026</td>
+              <td><div class="invoice-name">Startup Digital SL</div><div class="invoice-num">F-2026-002</div></td>
+              <td class="right">2.000,00 €</td>
+              <td class="right">420,00 € <span style="color:var(--text3);font-size:10px">(21%)</span></td>
+              <td class="right" style="font-weight:700">2.420,00 €</td>
+              <td><span class="status-badge status-validated">Validada</span></td>
+              <td>
+                <button class="action-btn action-correct" onclick="showToast('↩','Factura devuelta a borrador')">↩ Corregir</button>
+                <button class="action-btn action-delete" onclick="deleteInvoice(this)">🗑</button>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="type-badge type-recibida">↓ Recibida</span></td>
+              <td>10/03/2026</td>
+              <td><div class="invoice-name">Gestoría López</div><div class="invoice-num">GL-0203</div></td>
+              <td class="right">180,00 €</td>
+              <td class="right">37,80 € <span style="color:var(--text3);font-size:10px">(21%)</span></td>
+              <td class="right" style="font-weight:700">217,80 €</td>
+              <td><span class="status-badge status-validated">Validada</span></td>
+              <td>
+                <button class="action-btn action-correct" onclick="showToast('↩','Factura devuelta a borrador')">↩ Corregir</button>
+                <button class="action-btn action-delete" onclick="deleteInvoice(this)">🗑</button>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="type-badge type-emitida">↑ Emitida</span></td>
+              <td>01/03/2026</td>
+              <td><div class="invoice-name">TechCorp Madrid</div><div class="invoice-num">F-2026-001</div></td>
+              <td class="right">700,00 €</td>
+              <td class="right">147,00 € <span style="color:var(--text3);font-size:10px">(21%)</span></td>
+              <td class="right" style="font-weight:700">847,00 €</td>
+              <td><span class="status-badge status-locked">🔒 Declarada</span></td>
+              <td><span style="font-size:12px;color:var(--text3)">🔒 No editable</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:12px;color:var(--text2)">
+        <span>Mostrando 1–5 de 23 facturas</span>
+        <div style="display:flex;gap:6px">
+          <button class="year-btn active">1</button>
+          <button class="year-btn">2</button>
+          <button class="year-btn">3</button>
+          <span style="color:var(--text3)">...</span>
+          <button class="year-btn">5</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DECLARACIONES ── -->
+    <div class="page" id="page-declaraciones">
+
+      <div class="topbar">
+        <div>
+          <div class="page-title">Declaraciones fiscales</div>
+          <div class="page-sub">Genera y gestiona tus modelos 303 y 130</div>
+        </div>
+      </div>
+
+      <div class="alert green">
+        <div class="alert-text">
+          <div class="alert-title">✅ 12 facturas validadas listas para declarar</div>
+          <div class="alert-desc">Puedes generar tu declaración trimestral ahora</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:20px">
+
+        <!-- Panel generar -->
+        <div class="gen-panel">
+          <div class="card-title">Generar declaración</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Trimestre 1 · 2026</div>
+
+          <div class="gen-item">
+            <div class="gen-item-header">
+              <div>
+                <div class="gen-item-title">Modelo 303</div>
+                <div class="gen-item-sub">IVA · Límite: 20 abril</div>
+              </div>
+              <span class="badge badge-warn">28 días</span>
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="generateDecl('303')">📊 Calcular Modelo 303</button>
+          </div>
+
+          <div class="gen-item">
+            <div class="gen-item-header">
+              <div>
+                <div class="gen-item-title">Modelo 130</div>
+                <div class="gen-item-sub">IRPF · Límite: 20 abril</div>
+              </div>
+              <span class="badge badge-warn">28 días</span>
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="generateDecl('130')">📋 Calcular Modelo 130</button>
+          </div>
+
+          <div class="gen-tip">
+            💡 Solo se incluyen facturas <strong>validadas</strong>. Las facturas en borrador no entran en el cálculo.
+          </div>
+        </div>
+
+        <!-- Lista declaraciones -->
+        <div>
+          <div class="section-title">Historial de declaraciones</div>
+
+          <div class="decl-card">
+            <div class="decl-header">
+              <div>
+                <div class="decl-title">Modelo 303 — IVA Trimestral</div>
+                <div class="decl-sub">2025-T4 · Límite: 30 enero 2026</div>
+              </div>
+              <span class="badge badge-ok">✅ Enviada</span>
+            </div>
+            <div class="decl-grid">
+              <div class="decl-item">
+                <div class="decl-item-label">IVA repercutido</div>
+                <div class="decl-item-val">1.260,00 €</div>
+              </div>
+              <div class="decl-item">
+                <div class="decl-item-label">IVA deducible</div>
+                <div class="decl-item-val">183,75 €</div>
+              </div>
+            </div>
+            <div class="decl-result pay">
+              <div>
+                <div class="decl-result-label">💸 Ingresado en Hacienda</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:2px">Enviado el 28 enero 2026</div>
+              </div>
+              <div class="decl-result-amount">1.076,25 €</div>
+            </div>
+            <div class="decl-actions">
+              <span class="confirmed-badge">✅ Enviada el 28 ene 2026</span>
+            </div>
+          </div>
+
+          <div class="decl-card">
+            <div class="decl-header">
+              <div>
+                <div class="decl-title">Modelo 130 — IRPF</div>
+                <div class="decl-sub">2025-T4 · Límite: 20 enero 2026</div>
+              </div>
+              <span class="badge badge-ok">✅ Enviada</span>
+            </div>
+            <div class="decl-grid">
+              <div class="decl-item">
+                <div class="decl-item-label">Ingresos acumulados</div>
+                <div class="decl-item-val">18.500,00 €</div>
+              </div>
+              <div class="decl-item">
+                <div class="decl-item-label">Gastos deducibles</div>
+                <div class="decl-item-val">4.200,00 €</div>
+              </div>
+            </div>
+            <div class="decl-result pay">
+              <div>
+                <div class="decl-result-label">💸 Pago fraccionado</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:2px">20% del rendimiento neto</div>
+              </div>
+              <div class="decl-result-amount">2.860,00 €</div>
+            </div>
+            <div class="decl-actions">
+              <span class="confirmed-badge">✅ Enviada el 15 ene 2026</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PRECIOS ── -->
+    <div class="page" id="page-precios">
+      <div class="topbar">
+        <div>
+          <div class="page-title">Elige tu plan</div>
+          <div class="page-sub">14 días de prueba gratuita · Sin compromiso · Cancela cuando quieras</div>
+        </div>
+      </div>
+
+      <div class="pricing-grid">
+
+        <div class="pricing-card">
+          <div class="pricing-name">Gratis</div>
+          <div class="pricing-amount">0 €</div>
+          <div class="pricing-period">/mes</div>
+          <div class="pricing-feature"><span class="check">○</span> 10 facturas por mes</div>
+          <div class="pricing-feature"><span class="cross">✗</span> Sin declaraciones</div>
+          <div class="pricing-feature"><span class="cross">✗</span> Sin OCR</div>
+          <div class="pricing-feature"><span class="cross">✗</span> Sin alertas</div>
+          <div style="margin-top:20px">
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;font-size:12px;color:var(--text2);font-weight:600">Plan actual</div>
+          </div>
+        </div>
+
+        <div class="pricing-card featured">
+          <div class="pricing-badge">MÁS POPULAR</div>
+          <div class="pricing-name" style="color:#60a5fa">Básico</div>
+          <div class="pricing-amount">9,99 €</div>
+          <div class="pricing-period">/mes</div>
+          <div class="pricing-feature"><span class="check">✓</span> Facturas ilimitadas</div>
+          <div class="pricing-feature"><span class="check">✓</span> Modelo 303 y 130</div>
+          <div class="pricing-feature"><span class="check">✓</span> OCR x20 facturas/mes</div>
+          <div class="pricing-feature"><span class="check">✓</span> Alertas de plazos</div>
+          <div style="margin-top:20px">
+            <button class="btn btn-primary" style="width:100%" onclick="showToast('🚀','Redirigiendo a Stripe...')">Empezar prueba gratuita</button>
+          </div>
+        </div>
+
+        <div class="pricing-card">
+          <div class="pricing-name">Pro</div>
+          <div class="pricing-amount">19,99 €</div>
+          <div class="pricing-period">/mes</div>
+          <div class="pricing-feature"><span class="check">✓</span> Todo lo del Básico</div>
+          <div class="pricing-feature"><span class="check">✓</span> OCR ilimitado</div>
+          <div class="pricing-feature"><span class="check">✓</span> Veille BOE automática</div>
+          <div class="pricing-feature"><span class="check">✓</span> Soporte prioritario</div>
+          <div style="margin-top:20px">
+            <button class="btn btn-ghost" style="width:100%" onclick="showToast('🚀','Redirigiendo a Stripe...')">Empezar prueba gratuita</button>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="text-align:center;margin-top:24px;font-size:12px;color:var(--text3)">
+        🔒 Pago seguro con Stripe · Cancela en cualquier momento · Sin permanencia
+      </div>
+    </div>
+
+    <!-- ── CONFIGURACION ── -->
+    <div class="page" id="page-configuracion">
+      <div class="topbar">
+        <div>
+          <div class="page-title">Configuración</div>
+          <div class="page-sub">Gestiona tu perfil y suscripción</div>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <div class="config-title">Datos personales</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Nombre completo</label>
+            <input class="form-input" value="María García López">
+          </div>
+          <div class="form-group">
+            <label class="form-label">NIF / NIE</label>
+            <input class="form-input" value="12345678Z" style="font-family:monospace">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Actividad profesional</label>
+            <input class="form-input" value="Desarrollo web freelance">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            <input class="form-input" value="+34 600 000 000">
+          </div>
+          <div class="form-group" style="grid-column:span 2">
+            <label class="form-label">Domicilio fiscal</label>
+            <input class="form-input" value="Calle Mayor 1, 29001 Málaga">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="showToast('✅','Cambios guardados correctamente')">Guardar cambios</button>
+      </div>
+
+      <div class="config-section">
+        <div class="config-title">Suscripción</div>
+        <div class="plan-card">
+          <div class="plan-top">
+            <div>
+              <div class="plan-name" style="color:#60a5fa">Plan Básico</div>
+              <div class="plan-price">9,99 €/mes · Próxima renovación: 1 abr 2026</div>
+            </div>
+            <div class="plan-status-dot"></div>
+          </div>
+          <div class="plan-limit"><span class="plan-limit-key">Facturas este mes</span><span class="plan-limit-val ok">15 / ∞</span></div>
+          <div class="plan-limit"><span class="plan-limit-key">Escaneo OCR</span><span class="plan-limit-val ok">Disponible</span></div>
+          <div class="plan-limit"><span class="plan-limit-key">Declaraciones</span><span class="plan-limit-val ok">Disponible</span></div>
+        </div>
+        <div style="margin-top:12px">
+          <button class="btn btn-ghost" onclick="showToast('⚙️','Abriendo portal de Stripe...')">⚙️ Gestionar suscripción</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TOAST -->
+<div class="toast success" id="toast">
+  <span class="toast-icon" id="toastIcon">✅</span>
+  <span id="toastMsg">Mensaje</span>
+</div>
+
+<script>
+  // ── NAVIGATION ──
+  function showPage(id, navEl) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
+    document.getElementById('page-' + id).classList.add('active')
+    if (navEl) navEl.classList.add('active')
+    closeSidebar()
+    window.scrollTo(0, 0)
+  }
+
+  // ── SIDEBAR MOBILE ──
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open')
+    document.getElementById('overlay').classList.toggle('active')
+  }
+
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open')
+    document.getElementById('overlay').classList.remove('active')
+  }
+
+  // ── MODAL SCAN ──
+  let scanPhase = 0
+
+  function openModal() {
+    scanPhase = 0
+    document.getElementById('scanStep1').style.display = 'block'
+    document.getElementById('scanStep2').style.display = 'none'
+    document.getElementById('scanStep3').style.display = 'none'
+    document.getElementById('modalMainBtn').textContent = 'Empezar escaneo'
+    document.getElementById('modalScan').classList.add('active')
+  }
+
+  function closeModal() {
+    document.getElementById('modalScan').classList.remove('active')
+  }
+
+  function startScan() {
+    scanPhase = 1
+    document.getElementById('scanStep1').style.display = 'none'
+    document.getElementById('scanStep2').style.display = 'block'
+    document.getElementById('modalMainBtn').textContent = 'Procesando...'
+    setTimeout(() => {
+      scanPhase = 2
+      document.getElementById('scanStep2').style.display = 'none'
+      document.getElementById('scanStep3').style.display = 'block'
+      document.getElementById('modalMainBtn').textContent = '💾 Guardar borrador'
+    }, 2500)
+  }
+
+  function handleModalBtn() {
+    if (scanPhase === 0) startScan()
+    else if (scanPhase === 2) {
+      closeModal()
+      showToast('✅', 'Factura guardada como borrador')
+    }
+  }
+
+  // ── INVOICE ACTIONS ──
+  function validateInvoice(btn) {
+    const row = btn.closest('tr')
+    const badge = row.querySelector('.status-badge')
+    badge.className = 'status-badge status-validated'
+    badge.textContent = 'Validada'
+    btn.parentElement.innerHTML = '<button class="action-btn action-correct" onclick="showToast(\'↩\',\'Factura devuelta a borrador\')">↩ Corregir</button><button class="action-btn action-delete" onclick="deleteInvoice(this)">🗑</button>'
+    showToast('✅', 'Factura validada correctamente')
+  }
+
+  function deleteInvoice(btn) {
+    if (confirm('¿Eliminar esta factura?')) {
+      btn.closest('tr').style.opacity = '0'
+      btn.closest('tr').style.transform = 'translateX(20px)'
+      btn.closest('tr').style.transition = 'all 0.3s'
+      setTimeout(() => btn.closest('tr').remove(), 300)
+      showToast('🗑', 'Factura eliminada')
+    }
+  }
+
+  // ── FILTER TABS ──
+  function setFilter(tab) {
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'))
+    tab.classList.add('active')
+  }
+
+  // ── GENERATE DECLARATION ──
+  function generateDecl(tipo) {
+    showToast('📊', `Modelo ${tipo} calculado correctamente`)
+  }
+
+  // ── YEAR BUTTONS ──
+  document.querySelectorAll('.year-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      this.closest('.year-selector, div').querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'))
+      this.classList.add('active')
+    })
+  })
+
+  // ── TOAST ──
+  let toastTimer
+  function showToast(icon, msg) {
+    clearTimeout(toastTimer)
+    document.getElementById('toastIcon').textContent = icon
+    document.getElementById('toastMsg').textContent = msg
+    const t = document.getElementById('toast')
+    t.classList.add('show')
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3000)
+  }
+</script>
+</body>
+</html>
+```
