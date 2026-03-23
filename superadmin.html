@@ -1,1 +1,668 @@
-a
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AutoFisco — Super Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#06080d;--bg2:#0a0e17;--bg3:#0f1520;
+  --border:#1a2235;--border2:#1f2a3d;
+  --text:#e8eef8;--text2:#6b829e;--text3:#2d3f58;
+  --red:#ef4444;--red-g:rgba(239,68,68,0.1);
+  --green:#10b981;--green-g:rgba(16,185,129,0.1);
+  --blue:#3b82f6;--blue-g:rgba(59,130,246,0.1);
+  --yellow:#f59e0b;--yellow-g:rgba(245,158,11,0.1);
+  --purple:#8b5cf6;--purple-g:rgba(139,92,246,0.1);
+  --sw:220px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.app{display:flex;height:100vh;overflow:hidden}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.main::-webkit-scrollbar{width:3px}
+.main::-webkit-scrollbar-thumb{background:var(--border2)}
+
+/* SIDEBAR */
+.sidebar{width:var(--sw);min-width:var(--sw);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:200;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.sb-logo{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.logo-txt{font-family:'Syne',sans-serif;font-size:20px;font-weight:800}
+.logo-r{color:var(--red)}
+.adm-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:var(--red);font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;margin-top:7px;letter-spacing:.5px}
+.sb-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.ni{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:all .15s;font-size:13px;font-weight:500;color:var(--text2);border:1px solid transparent;user-select:none}
+.ni:hover{background:var(--bg3);color:var(--text)}
+.ni.active{background:rgba(239,68,68,.08);color:#f87171;border-color:rgba(239,68,68,.2)}
+.ni.back{color:var(--text3)}
+.ni.back:hover{color:var(--text2)}
+.ni-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.ni-notif{margin-left:auto;background:var(--yellow-g);color:var(--yellow);font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px}
+.nd{height:1px;background:var(--border);margin:6px 10px}
+.sb-bot{padding:10px 8px 14px;border-top:1px solid var(--border);flex-shrink:0}
+.lang-row{display:flex;gap:4px;padding:6px 10px 8px}
+.lb{flex:1;background:none;border:1px solid transparent;border-radius:8px;padding:5px 2px;cursor:pointer;font-size:16px;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.lb:hover{background:var(--bg3)}
+.lb.active{background:var(--bg3);border-color:var(--border2)}
+.adm-info{background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);border-radius:10px;padding:10px;text-align:center}
+.adm-info-t{font-size:11px;color:var(--red);font-weight:600}
+
+/* MOBILE HEADER */
+.mh{display:none;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;height:52px;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:300;flex-shrink:0}
+.hbg{background:none;border:none;cursor:pointer;padding:6px;display:flex;flex-direction:column;gap:5px;border-radius:8px;transition:background .15s}
+.hbg:hover{background:var(--bg3)}
+.hbg span{display:block;width:20px;height:2px;background:var(--text);border-radius:2px;transition:all .3s}
+.hbg.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.hbg.open span:nth-child(2){opacity:0}
+.hbg.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+.ml{font-family:'Syne',sans-serif;font-size:17px;font-weight:800}
+.mn{background:var(--yellow-g);color:var(--yellow);border:1px solid rgba(245,158,11,.2);border-radius:20px;font-size:10px;font-weight:700;padding:3px 10px}
+
+/* OVERLAY */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:150;backdrop-filter:blur(2px)}
+.ov.active{display:block}
+
+/* PAGES */
+.page{display:none;padding:22px}
+.page.active{display:block}
+
+/* TOPBAR */
+.tb{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:22px;flex-wrap:wrap}
+.pt{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;letter-spacing:-.3px}
+.ps{font-size:12px;color:var(--text2);margin-top:3px}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--green);background:var(--green-g);border:1px solid rgba(16,185,129,.2);padding:5px 12px;border-radius:20px;flex-shrink:0}
+.live::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* KPI */
+.kgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.kc{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;transition:transform .2s}
+.kc:hover{transform:translateY(-2px)}
+.kc.g{border-color:rgba(16,185,129,.2);background:linear-gradient(135deg,rgba(16,185,129,.04),var(--bg2))}
+.kc.b{border-color:rgba(59,130,246,.2);background:linear-gradient(135deg,rgba(59,130,246,.04),var(--bg2))}
+.kc.y{border-color:rgba(245,158,11,.2);background:linear-gradient(135deg,rgba(245,158,11,.04),var(--bg2))}
+.kc.r{border-color:rgba(239,68,68,.2);background:linear-gradient(135deg,rgba(239,68,68,.04),var(--bg2))}
+.kh{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.kl{font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.ki{font-size:18px}
+.kv{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin-bottom:3px;line-height:1}
+.kc.g .kv{color:var(--green)}.kc.b .kv{color:#60a5fa}.kc.y .kv{color:var(--yellow)}.kc.r .kv{color:#f87171}
+.ks{font-size:11px;color:var(--text2)}
+.kt{font-size:10px;color:var(--text3);margin-top:8px;padding-top:6px;border-top:1px solid var(--border)}
+
+/* SECTION TITLE */
+.st{font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px}
+
+/* PLAN GRID */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.pc{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;transition:transform .2s}
+.pc:hover{transform:translateY(-2px)}
+.pc.bas{border-color:rgba(59,130,246,.2)}.pc.pro{border-color:rgba(139,92,246,.2)}
+.ph{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.picon{font-size:20px}
+.plabel{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:2px}
+.pc.bas .plabel{color:#60a5fa}.pc.pro .plabel{color:var(--purple)}
+.pcount{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;line-height:1}
+.prev{font-size:11px;color:var(--text2);margin-top:2px}
+.pbar{height:3px;background:var(--bg3);border-radius:2px;margin-top:10px;overflow:hidden}
+.pbf{height:100%;border-radius:2px}
+.ppct{font-size:10px;color:var(--text3);text-align:right;margin-top:3px}
+
+/* COLS */
+.c2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.c3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px}
+.ctit{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.clink{font-size:11px;color:var(--blue);cursor:pointer;font-weight:500;background:none;border:none;font-family:inherit}
+.clink:hover{color:#93c5fd}
+
+/* BADGES */
+.badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.2px;white-space:nowrap}
+.bf{background:var(--bg3);color:var(--text2)}
+.bb{background:var(--blue-g);color:#60a5fa;border:1px solid rgba(59,130,246,.2)}
+.bp{background:var(--purple-g);color:var(--purple);border:1px solid rgba(139,92,246,.2)}
+.ba{background:var(--green-g);color:var(--green);border:1px solid rgba(16,185,129,.2)}
+.bt{background:var(--blue-g);color:#60a5fa}
+.bpd{background:var(--red-g);color:var(--red)}
+.bc{background:var(--bg3);color:var(--text3)}
+.bpend{background:var(--yellow-g);color:var(--yellow);border:1px solid rgba(245,158,11,.2);animation:pulse 2s infinite}
+.bok{background:var(--green-g);color:var(--green);border:1px solid rgba(16,185,129,.2)}
+.bign{background:var(--bg3);color:var(--text3)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* USER ITEMS */
+.ui{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);gap:8px}
+.ui:last-child{border-bottom:none}
+.un{font-size:13px;font-weight:500}
+.ud{font-size:11px;color:var(--text2);margin-top:1px}
+
+/* ACTIVITY */
+.ai{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)}
+.ai:last-child{border-bottom:none}
+.ail{display:flex;align-items:center;gap:10px}
+.aic{font-size:18px;flex-shrink:0}
+.ain{font-size:13px;font-weight:500}
+.ais{font-size:11px;color:var(--text2);margin-top:1px}
+.aiv{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;flex-shrink:0}
+
+/* TABLE */
+.tw{overflow-x:auto;border-radius:14px;border:1px solid var(--border);-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:540px}
+thead tr{background:var(--bg3);border-bottom:1px solid var(--border)}
+th{padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--bg3)}
+td{padding:11px 12px;vertical-align:middle}
+.tdp{font-size:13px;font-weight:500}
+.tds{font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;margin-top:1px}
+.tdm{font-size:12px;color:var(--text2)}
+.tdd{font-size:12px;color:var(--red)}
+
+/* DROPDOWN */
+.dd{position:relative;display:inline-block}
+.ab{background:none;border:1px solid var(--border);cursor:pointer;color:var(--text2);font-size:16px;padding:4px 10px;border-radius:8px;transition:all .15s;line-height:1}
+.ab:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+.dm{display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:6px;z-index:100;min-width:170px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.dm.open{display:block}
+.di{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .1s;user-select:none}
+.di:hover{background:var(--bg3);color:var(--text)}
+.di.danger{color:var(--red)}
+.di.danger:hover{background:var(--red-g)}
+.dl{font-size:10px;color:var(--text3);padding:4px 10px 2px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.dv{height:1px;background:var(--border);margin:5px 0}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;text-decoration:none;user-select:none}
+.btn-p{background:var(--blue);color:white}.btn-p:hover{background:#2563eb;transform:translateY(-1px)}
+.btn-g{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}.btn-g:hover{color:var(--text)}
+.btn-d{background:var(--red-g);color:var(--red);border:1px solid rgba(239,68,68,.2)}.btn-d:hover{background:rgba(239,68,68,.2)}
+.btn-s{background:var(--green-g);color:var(--green);border:1px solid rgba(16,185,129,.2)}.btn-s:hover{background:rgba(16,185,129,.2)}
+
+/* ALERTS */
+.alert{border-radius:12px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;margin-bottom:14px}
+.alert.r{background:var(--red-g);border:1px solid rgba(239,68,68,.2)}
+.alert.y{background:var(--yellow-g);border:1px solid rgba(245,158,11,.2)}
+.alert.g{background:var(--green-g);border:1px solid rgba(16,185,129,.2)}
+.aicon{font-size:15px;margin-top:1px;flex-shrink:0}
+.atit{font-size:13px;font-weight:600;margin-bottom:2px}
+.alert.r .atit{color:var(--red)}.alert.y .atit{color:var(--yellow)}.alert.g .atit{color:var(--green)}
+.adesc{font-size:11px;color:var(--text2);line-height:1.5}
+
+/* BOE */
+.boe{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;transition:border-color .2s}
+.boe.pend{border-color:rgba(245,158,11,.3)}
+.bh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+.btit{font-size:13px;font-weight:500;line-height:1.4;flex:1}
+.bmeta{font-size:10px;color:var(--text3);margin-top:4px;font-family:'DM Mono',monospace}
+.bai{background:var(--bg3);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.bail{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.bait{font-size:12px;color:var(--text2);line-height:1.5}
+.brules{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.rtag{font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;background:var(--blue-g);color:#60a5fa;border:1px solid rgba(59,130,246,.2);font-family:'DM Mono',monospace}
+.bchg{background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.15);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.bchgt{font-weight:700;color:var(--yellow);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.bchgr{font-size:12px;color:var(--text2);margin-bottom:3px}
+.bchgv{color:var(--yellow);font-weight:700;font-family:'DM Mono',monospace}
+.bact{display:flex;gap:8px;flex-wrap:wrap}
+
+/* REVENUE */
+.rr{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;gap:8px}
+.rr:last-child{border-bottom:none}
+.rl{color:var(--text2)}
+.rv{font-family:'Syne',sans-serif;font-weight:700;flex-shrink:0}
+.rv.g{color:var(--green)}.rv.m{color:var(--text3)}.rv.tot{font-size:18px}
+
+/* SEARCH */
+.sw{position:relative;margin-bottom:14px}
+.si{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:9px 12px 9px 36px;font-size:13px;color:var(--text);font-family:inherit;outline:none;transition:border-color .15s}
+.si:focus{border-color:var(--blue)}
+.si::placeholder{color:var(--text3)}
+.sic{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none}
+
+/* PAGINATION */
+.pag{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px;flex-wrap:wrap}
+.pinfo{font-size:11px;color:var(--text2)}
+.pbtns{display:flex;gap:4px}
+.pb{background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;transition:all .15s;font-family:inherit}
+.pb.active{background:var(--blue);border-color:var(--blue);color:white}
+.pb:hover:not(.active){color:var(--text)}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:12px 16px;font-size:13px;display:flex;align-items:center;gap:8px;z-index:9999;opacity:0;transform:translateY(10px);transition:all .3s;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.5);pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* UTILS */
+.sp{height:18px}
+.mono{font-family:'DM Mono',monospace}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .kgrid{grid-template-columns:repeat(2,1fr)}
+  .pgrid{grid-template-columns:repeat(3,1fr)}
+  .c3{grid-template-columns:1fr 1fr}
+}
+@media(max-width:768px){
+  .mh{display:flex}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);z-index:250;box-shadow:4px 0 24px rgba(0,0,0,.5)}
+  .sidebar.open{transform:translateX(0)}
+  .app{flex-direction:column}
+  .main{width:100%}
+  .page{padding:14px}
+  .kgrid{grid-template-columns:1fr 1fr;gap:8px}
+  .pgrid{grid-template-columns:1fr}
+  .c2{grid-template-columns:1fr}
+  .c3{grid-template-columns:1fr}
+  .kv{font-size:20px}
+  .kl{font-size:9px}
+  .tb{flex-direction:column;align-items:flex-start;gap:8px}
+  .bact{flex-direction:column}
+  .bact .btn{width:100%;justify-content:center}
+  .toast{left:14px;right:14px;bottom:14px;max-width:none}
+}
+@media(max-width:480px){
+  .kgrid{grid-template-columns:1fr 1fr;gap:6px}
+  .kc{padding:12px}
+  .kv{font-size:18px}
+  .page{padding:12px}
+  .card{padding:14px}
+}
+</style>
+</head>
+<body>
+<div class="ov" id="ov" onclick="closeSb()"></div>
+<div class="app">
+
+<!-- MOBILE HEADER -->
+<div class="mh">
+  <button class="hbg" id="hbg" onclick="toggleSb()">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="ml">Auto<span style="color:var(--red)">Fisco</span> <span style="font-size:10px;color:var(--red);vertical-align:middle">ADMIN</span></div>
+  <span class="mn">2 BOE</span>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sb">
+  <div class="sb-logo">
+    <div class="logo-txt">Auto<span class="logo-r">Fisco</span></div>
+    <div class="adm-badge">🔐 Super Admin</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="ni active" data-page="overview" onclick="nav(this)"><span class="ni-icon">📊</span><span class="t" data-k="nav.overview">Vue d'ensemble</span></div>
+    <div class="ni" data-page="users" onclick="nav(this)"><span class="ni-icon">👥</span><span class="t" data-k="nav.users">Utilisateurs</span></div>
+    <div class="ni" data-page="revenue" onclick="nav(this)"><span class="ni-icon">💰</span><span class="t" data-k="nav.revenue">Revenus</span></div>
+    <div class="ni" data-page="activity" onclick="nav(this)"><span class="ni-icon">🧾</span><span class="t" data-k="nav.activity">Activité</span></div>
+    <div class="ni" data-page="boe" onclick="nav(this)"><span class="ni-icon">📰</span><span class="t" data-k="nav.boe">Veille BOE</span><span class="ni-notif">2</span></div>
+    <div class="nd"></div>
+    <div class="ni back" onclick="toast('↩',T('toast.back'))"><span class="ni-icon">↩</span><span class="t" data-k="nav.back">Retour à l'app</span></div>
+  </nav>
+  <div class="sb-bot">
+    <div class="lang-row">
+      <button class="lb active" onclick="setLang('fr',this)" title="Français">🇫🇷</button>
+      <button class="lb" onclick="setLang('es',this)" title="Español">🇪🇸</button>
+      <button class="lb" onclick="setLang('en',this)" title="English">🇬🇧</button>
+    </div>
+    <div class="adm-info"><div style="font-size:18px;margin-bottom:3px">🔐</div><div class="adm-info-t t" data-k="admin.access">Accès Super Admin</div></div>
+  </div>
+</aside>
+
+<main class="main" id="mc">
+
+<!-- VUE D'ENSEMBLE -->
+<div class="page active" id="page-overview">
+  <div class="tb">
+    <div><div class="pt t" data-k="nav.overview">Vue d'ensemble</div><div class="ps t" data-k="ov.sub">Tableau de bord en temps réel</div></div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span class="live t" data-k="live">En direct</span>
+      <div style="font-size:11px;color:var(--text2)">23 mar 2026 · 14:32</div>
+    </div>
+  </div>
+  <div class="kgrid">
+    <div class="kc g"><div class="kh"><span class="kl t" data-k="kpi.mrr">MRR Estimé</span><span class="ki">💰</span></div><div class="kv">2 847 €</div><div class="ks t" data-k="kpi.mrr.s">Revenus mensuels récurrents</div><div class="kt">23 Basique + 8 Pro actifs</div></div>
+    <div class="kc b"><div class="kh"><span class="kl t" data-k="kpi.users">Utilisateurs</span><span class="ki">👥</span></div><div class="kv">247</div><div class="ks">+12 ce mois · +3 aujourd'hui</div><div class="kt">+18 cette semaine</div></div>
+    <div class="kc y"><div class="kh"><span class="kl t" data-k="kpi.conv">Conversion</span><span class="ki">📈</span></div><div class="kv">12,6%</div><div class="ks t" data-k="kpi.conv.s">Gratuit → Plan payant</div><div class="kt">Objectif: 15% · En hausse ↑</div></div>
+    <div class="kc r"><div class="kh"><span class="kl t" data-k="kpi.alerts">Alertes</span><span class="ki">⚠️</span></div><div class="kv">3</div><div class="ks">2 BOE · 1 paiement échoué</div><div class="kt">5 résiliations ce mois</div></div>
+  </div>
+  <div class="st t" data-k="plans.dist">Répartition des plans</div>
+  <div class="pgrid">
+    <div class="pc"><div class="ph"><div><div class="plabel t" data-k="plan.free">Plan Gratuit</div><div class="pcount">216</div><div class="prev" style="color:var(--text3)">0 €/mois</div></div><div class="picon">🆓</div></div><div class="pbar"><div class="pbf" style="width:87%;background:var(--text3)"></div></div><div class="ppct" style="color:var(--text3)">87,4%</div></div>
+    <div class="pc bas"><div class="ph"><div><div class="plabel t" data-k="plan.basic">Plan Basique</div><div class="pcount" style="color:#60a5fa">23</div><div class="prev">229,77 €/mois</div></div><div class="picon">⭐</div></div><div class="pbar"><div class="pbf" style="width:9.3%;background:#3b82f6"></div></div><div class="ppct">9,3%</div></div>
+    <div class="pc pro"><div class="ph"><div><div class="plabel t" data-k="plan.pro">Plan Pro</div><div class="pcount" style="color:var(--purple)">8</div><div class="prev">159,92 €/mois</div></div><div class="picon">🚀</div></div><div class="pbar"><div class="pbf" style="width:3.2%;background:var(--purple)"></div></div><div class="ppct">3,2%</div></div>
+  </div>
+  <div class="c2">
+    <div class="card">
+      <div class="ctit"><span class="t" data-k="recent.users">Dernières inscriptions</span><button class="clink" onclick="nav(document.querySelector('[data-page=users]'))">Voir tout →</button></div>
+      <div class="ui"><div><div class="un">Carlos Rodríguez M.</div><div class="ud">Aujourd'hui, 11:42</div></div><span class="badge bf">gratuit</span></div>
+      <div class="ui"><div><div class="un">Ana Martínez López</div><div class="ud">Aujourd'hui, 09:18</div></div><span class="badge bf">gratuit</span></div>
+      <div class="ui"><div><div class="un">Pablo García Sanz</div><div class="ud">Hier, 16:55</div></div><span class="badge bb">basique</span></div>
+      <div class="ui"><div><div class="un">Laura Fernández</div><div class="ud">Hier, 14:20</div></div><span class="badge bf">gratuit</span></div>
+      <div class="ui"><div><div class="un">Miguel Torres Ruiz</div><div class="ud">21 mar</div></div><span class="badge bp">pro</span></div>
+    </div>
+    <div class="card">
+      <div class="ctit"><span class="t" data-k="product.act">Activité produit</span><button class="clink" onclick="nav(document.querySelector('[data-page=activity]'))">Détail →</button></div>
+      <div class="ai"><div class="ail"><span class="aic">🧾</span><div><div class="ain t" data-k="act.inv">Factures totales</div><div class="ais">+47 aujourd'hui</div></div></div><div class="aiv">1 284</div></div>
+      <div class="ai"><div class="ail"><span class="aic">📷</span><div><div class="ain t" data-k="act.ocr">Scannées OCR</div><div class="ais">Automatiquement</div></div></div><div class="aiv">389</div></div>
+      <div class="ai"><div class="ail"><span class="aic">📋</span><div><div class="ain t" data-k="act.decl">Déclarations</div><div class="ais">+8 ce mois</div></div></div><div class="aiv">142</div></div>
+      <div class="ai" style="cursor:pointer" onclick="nav(document.querySelector('[data-page=boe]'))"><div class="ail"><span class="aic">⚠️</span><div><div class="ain" style="color:var(--yellow)">BOE en attente</div><div class="ais">Révision requise</div></div></div><div class="aiv" style="color:var(--yellow)">2</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- UTILISATEURS -->
+<div class="page" id="page-users">
+  <div class="tb"><div><div class="pt t" data-k="nav.users">Utilisateurs</div><div class="ps">247 utilisateurs enregistrés</div></div></div>
+  <div class="sw"><span class="sic">🔍</span><input class="si t-ph" data-k="users.search" placeholder="Rechercher un utilisateur..."></div>
+  <div class="tw">
+    <table>
+      <thead><tr>
+        <th class="t" data-k="th.user">Utilisateur</th>
+        <th>NIF</th>
+        <th class="t" data-k="th.plan">Plan</th>
+        <th class="t" data-k="th.status">Statut</th>
+        <th class="t" data-k="th.reg">Inscription</th>
+        <th class="t" data-k="th.ren">Renouvellement</th>
+        <th class="t" data-k="th.act">Actions</th>
+      </tr></thead>
+      <tbody>
+        <tr><td><div class="tdp">María García López</div><div class="tds">Développement web freelance</div></td><td><span class="mono tdm">12345678Z</span></td><td><span class="badge bb t-plan">basique</span></td><td><span class="badge ba">● actif</span></td><td class="tdm">01/01/2026</td><td class="tdm">01/04/2026</td><td><div class="dd"><button class="ab" onclick="tdd(this)">⋯</button><div class="dm"><div class="dl t" data-k="dd.chg">Changer le plan</div><div class="di" onclick="chgPlan(this,'gratuit','bf')">🆓 <span class="t" data-k="plan.free">Gratuit</span></div><div class="di" onclick="chgPlan(this,'basique','bb')">⭐ <span class="t" data-k="plan.basic">Basique</span></div><div class="di" onclick="chgPlan(this,'pro','bp')">🚀 Pro</div><div class="dv"></div><div class="di danger" onclick="suspUser(this)">🚫 <span class="t" data-k="dd.susp">Suspendre</span></div></div></div></td></tr>
+        <tr><td><div class="tdp">Pablo García Sanz</div><div class="tds">Design graphique freelance</div></td><td><span class="mono tdm">87654321X</span></td><td><span class="badge bp t-plan">pro</span></td><td><span class="badge bt">◐ essai</span></td><td class="tdm">20/03/2026</td><td class="tdm">03/04/2026</td><td><div class="dd"><button class="ab" onclick="tdd(this)">⋯</button><div class="dm"><div class="dl t" data-k="dd.chg">Changer le plan</div><div class="di" onclick="chgPlan(this,'gratuit','bf')">🆓 <span class="t" data-k="plan.free">Gratuit</span></div><div class="di" onclick="chgPlan(this,'basique','bb')">⭐ <span class="t" data-k="plan.basic">Basique</span></div><div class="di" onclick="chgPlan(this,'pro','bp')">🚀 Pro</div><div class="dv"></div><div class="di danger" onclick="suspUser(this)">🚫 <span class="t" data-k="dd.susp">Suspendre</span></div></div></div></td></tr>
+        <tr><td><div class="tdp">Ana Martínez López</div><div class="tds">Conseil en entreprise</div></td><td><span class="mono tdm">11223344B</span></td><td><span class="badge bf t-plan">gratuit</span></td><td><span class="badge bc">inactif</span></td><td class="tdm">22/03/2026</td><td class="tdm" style="color:var(--text3)">—</td><td><div class="dd"><button class="ab" onclick="tdd(this)">⋯</button><div class="dm"><div class="dl t" data-k="dd.chg">Changer le plan</div><div class="di" onclick="chgPlan(this,'gratuit','bf')">🆓 <span class="t" data-k="plan.free">Gratuit</span></div><div class="di" onclick="chgPlan(this,'basique','bb')">⭐ <span class="t" data-k="plan.basic">Basique</span></div><div class="di" onclick="chgPlan(this,'pro','bp')">🚀 Pro</div><div class="dv"></div><div class="di danger" onclick="suspUser(this)">🚫 <span class="t" data-k="dd.susp">Suspendre</span></div></div></div></td></tr>
+        <tr><td><div class="tdp">Roberto Sánchez</div><div class="tds">Photographie professionnelle</div></td><td><span class="mono tdm">99887766C</span></td><td><span class="badge bb t-plan">basique</span></td><td><span class="badge bpd">⚠ paiement échoué</span></td><td class="tdm">15/02/2026</td><td class="tdd">01/03/2026</td><td><div class="dd"><button class="ab" onclick="tdd(this)">⋯</button><div class="dm"><div class="dl t" data-k="dd.chg">Changer le plan</div><div class="di" onclick="chgPlan(this,'gratuit','bf')">🆓 <span class="t" data-k="plan.free">Gratuit</span></div><div class="di" onclick="chgPlan(this,'basique','bb')">⭐ <span class="t" data-k="plan.basic">Basique</span></div><div class="di" onclick="chgPlan(this,'pro','bp')">🚀 Pro</div><div class="dv"></div><div class="di danger" onclick="suspUser(this)">🚫 <span class="t" data-k="dd.susp">Suspendre</span></div></div></div></td></tr>
+        <tr><td><div class="tdp">Miguel Torres Ruiz</div><div class="tds">Marketing digital</div></td><td><span class="mono tdm">55443322D</span></td><td><span class="badge bp t-plan">pro</span></td><td><span class="badge ba">● actif</span></td><td class="tdm">10/01/2026</td><td class="tdm">10/04/2026</td><td><div class="dd"><button class="ab" onclick="tdd(this)">⋯</button><div class="dm"><div class="dl t" data-k="dd.chg">Changer le plan</div><div class="di" onclick="chgPlan(this,'gratuit','bf')">🆓 <span class="t" data-k="plan.free">Gratuit</span></div><div class="di" onclick="chgPlan(this,'basique','bb')">⭐ <span class="t" data-k="plan.basic">Basique</span></div><div class="di" onclick="chgPlan(this,'pro','bp')">🚀 Pro</div><div class="dv"></div><div class="di danger" onclick="suspUser(this)">🚫 <span class="t" data-k="dd.susp">Suspendre</span></div></div></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pag"><span class="pinfo">Affichage 1–5 sur 247 utilisateurs</span><div class="pbtns"><button class="pb active">1</button><button class="pb">2</button><button class="pb">3</button><span style="color:var(--text3);padding:0 2px">...</span><button class="pb">50</button></div></div>
+</div>
+
+<!-- REVENUS -->
+<div class="page" id="page-revenue">
+  <div class="tb"><div><div class="pt t" data-k="nav.revenue">Revenus</div><div class="ps t" data-k="rev.sub">Métriques de monétisation en temps réel</div></div><span class="live t" data-k="live">En direct</span></div>
+  <div class="kgrid">
+    <div class="kc g"><div class="kh"><span class="kl">MRR</span><span class="ki">💰</span></div><div class="kv">2 847 €</div><div class="ks">Revenus mensuels récurrents</div></div>
+    <div class="kc b"><div class="kh"><span class="kl">ARR Estimé</span><span class="ki">📅</span></div><div class="kv">34 164 €</div><div class="ks">Projection annuelle</div></div>
+    <div class="kc"><div class="kh"><span class="kl t" data-k="kpi.act">Actives</span><span class="ki">✅</span></div><div class="kv" style="color:var(--text)">31</div><div class="ks">Abonnements actifs</div></div>
+    <div class="kc r"><div class="kh"><span class="kl t" data-k="kpi.failed">Paiements échoués</span><span class="ki">🚨</span></div><div class="kv">1</div><div class="ks">Action requise</div></div>
+  </div>
+  <div class="c2">
+    <div class="card">
+      <div class="ctit t" data-k="rev.bkd">Décomposition des revenus</div>
+      <div class="rr"><span class="rl">⭐ Plan Basique (23 × 9,99€)</span><span class="rv g">229,77 €</span></div>
+      <div class="rr"><span class="rl">🚀 Plan Pro (8 × 19,99€)</span><span class="rv g">159,92 €</span></div>
+      <div class="rr"><span class="rl">Essais actifs (non facturés)</span><span class="rv m">0 €</span></div>
+      <div class="rr" style="border-top:2px solid var(--border2);padding-top:12px;margin-top:4px"><span style="font-weight:700;font-size:14px">MRR Total</span><span class="rv tot g">389,69 €</span></div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text3)">ARR projeté: 4 676,28 € · Objectif T2: 1 000 € MRR</div>
+    </div>
+    <div class="card">
+      <div class="ctit t" data-k="rev.subs">Abonnements actifs récents</div>
+      <div class="ui"><div><div class="un">Miguel Torres Ruiz</div><div class="ud">Pro · Renouvellement 10 avr</div></div><span class="badge ba">19,99€</span></div>
+      <div class="ui"><div><div class="un">María García López</div><div class="ud">Basique · Renouvellement 1 avr</div></div><span class="badge ba">9,99€</span></div>
+      <div class="ui"><div><div class="un">Pablo García Sanz</div><div class="ud">Pro · Essai jusqu'au 3 avr</div></div><span class="badge bt">essai</span></div>
+      <div class="ui"><div><div class="un">Laura Fernández</div><div class="ud">Basique · Renouvellement 15 avr</div></div><span class="badge ba">9,99€</span></div>
+      <div class="ui" style="background:var(--red-g);border-radius:8px;padding:8px;margin-top:6px"><div><div class="un" style="color:var(--red)">Roberto Sánchez ⚠️</div><div class="ud">Basique · Paiement échoué 1 mar</div></div><span class="badge bpd">9,99€</span></div>
+    </div>
+  </div>
+  <div class="sp"></div>
+  <div class="alert r"><span class="aicon">🚨</span><div><div class="atit">1 paiement échoué — action requise</div><div class="adesc">Stripe va réessayer automatiquement. Si l'échec persiste, l'utilisateur perdra l'accès à son plan.</div></div></div>
+  <div class="card">
+    <div class="ctit">Résiliations ce mois (5)</div>
+    <div class="ui"><div><div class="un">Juan Pérez García</div><div class="ud">Basique · Résilié le 18 mar</div></div></div>
+    <div class="ui"><div><div class="un">Carmen Álvarez</div><div class="ud">Pro · Résilié le 15 mar</div></div></div>
+    <div class="ui"><div><div class="un">David López</div><div class="ud">Basique · Résilié le 10 mar</div></div></div>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px">Taux de résiliation mensuel: 16,1% · Objectif: &lt;10%</div>
+  </div>
+</div>
+
+<!-- ACTIVITÉ -->
+<div class="page" id="page-activity">
+  <div class="tb"><div><div class="pt t" data-k="nav.activity">Activité</div><div class="ps t" data-k="act.sub">30 derniers jours</div></div></div>
+  <div class="st t" data-k="ocr.perf">Performance OCR</div>
+  <div class="c3" style="margin-bottom:20px">
+    <div class="kc"><div class="kh"><span class="kl t" data-k="ocr.tot">Total scannées</span><span class="ki">📷</span></div><div class="kv" style="color:var(--text)">389</div><div class="ks">factures avec OCR</div></div>
+    <div class="kc g"><div class="kh"><span class="kl t" data-k="ocr.hi">Haute confiance</span><span class="ki">✅</span></div><div class="kv">341</div><div class="ks">confiance ≥ 80%</div></div>
+    <div class="kc g"><div class="kh"><span class="kl t" data-k="ocr.acc">Précision OCR</span><span class="ki">🎯</span></div><div class="kv">87,7%</div><div class="ks">taux de réussite</div></div>
+  </div>
+  <div class="c2">
+    <div class="card">
+      <div class="ctit t" data-k="inv.day">Factures par jour — 7 derniers jours</div>
+      <div class="tw" style="border:none;border-radius:0">
+        <table style="min-width:unset">
+          <thead><tr><th class="t" data-k="th.date">Date</th><th class="t" data-k="th.total">Total</th><th class="t" data-k="th.iss">Émises</th><th class="t" data-k="th.rec">Reçues</th></tr></thead>
+          <tbody>
+            <tr><td>23 mar</td><td style="font-weight:700">47</td><td style="color:var(--green)">↑ 28</td><td style="color:var(--purple)">↓ 19</td></tr>
+            <tr><td>22 mar</td><td style="font-weight:700">38</td><td style="color:var(--green)">↑ 22</td><td style="color:var(--purple)">↓ 16</td></tr>
+            <tr><td>21 mar</td><td style="font-weight:700">52</td><td style="color:var(--green)">↑ 31</td><td style="color:var(--purple)">↓ 21</td></tr>
+            <tr><td>20 mar</td><td style="font-weight:700">29</td><td style="color:var(--green)">↑ 17</td><td style="color:var(--purple)">↓ 12</td></tr>
+            <tr><td>19 mar</td><td style="font-weight:700">41</td><td style="color:var(--green)">↑ 25</td><td style="color:var(--purple)">↓ 16</td></tr>
+            <tr><td>18 mar</td><td style="font-weight:700">35</td><td style="color:var(--green)">↑ 20</td><td style="color:var(--purple)">↓ 15</td></tr>
+            <tr><td>17 mar</td><td style="font-weight:700">44</td><td style="color:var(--green)">↑ 27</td><td style="color:var(--purple)">↓ 17</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="ctit t" data-k="decl.gen">Déclarations générées</div>
+        <div class="ai"><div class="ail"><span class="aic">📊</span><div><div class="ain">Modèle 303</div><div class="ais">+8 ce mois</div></div></div><div class="aiv">89</div></div>
+        <div class="ai"><div class="ail"><span class="aic">📋</span><div><div class="ain">Modèle 130</div><div class="ais">+7 ce mois</div></div></div><div class="aiv">53</div></div>
+        <div class="ai"><div class="ail"><span class="aic">📄</span><div><div class="ain">PDFs téléchargés</div><div class="ais">Ce mois</div></div></div><div class="aiv">67</div></div>
+      </div>
+      <div class="alert y"><span class="aicon">⚠️</span><div><div class="atit">12 brouillons abandonnés</div><div class="adesc">Factures en brouillon non validées depuis plus de 7 jours. Ces utilisateurs peuvent avoir besoin d'aide.</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- VEILLE BOE -->
+<div class="page" id="page-boe">
+  <div class="tb">
+    <div><div class="pt t" data-k="nav.boe">Veille BOE</div><div class="ps t" data-k="boe.sub">Changements fiscaux détectés automatiquement</div></div>
+    <span class="live" style="color:var(--yellow);background:var(--yellow-g);border-color:rgba(245,158,11,.2)">⚠️ 2 en attente</span>
+  </div>
+  <div class="st t" data-k="boe.pend">⚠️ Alertes en attente de révision</div>
+
+  <div class="boe pend" id="b1">
+    <div class="bh"><div><div class="btit">Real Decreto-ley 3/2026, de 17 de marzo — modifica la Ley 37/1992 del IVA</div><div class="bmeta">BOE-A-2026-4821 · Publié 18 mar 2026 · Détecté 18 mar 08h00</div></div><span class="badge bpend" id="b1b">⏳ En attente</span></div>
+    <div class="bai"><div class="bail">🤖 Analyse IA</div><div class="bait">Possible modification du taux réduit de TVA de 10% à 12% pour les services d'hôtellerie et restauration, entrée en vigueur le 1er juillet 2026.</div></div>
+    <div class="brules"><span class="rtag">IVA_REDUCIDO</span></div>
+    <div class="bchg"><div class="bchgt">⚠️ Changement suggéré par l'IA</div><div class="bchgr">Règle: <span class="bchgv">IVA_REDUCIDO</span></div><div class="bchgr">Valeur actuelle: <span class="bchgv">0.10</span> → Nouvelle valeur: <span class="bchgv">0.12</span></div><div class="bchgr">À partir du: <span class="bchgv">2026-07-01</span></div></div>
+    <div class="bact" id="b1a"><button class="btn btn-g" onclick="toast('📄',T('toast.boe'))">📄 Voir le BOE</button><button class="btn btn-d" onclick="ignoreBOE('b1')">🚫 <span class="t" data-k="boe.ign">Ignorer</span></button><button class="btn btn-s" onclick="applyBOE('b1')">✅ <span class="t" data-k="boe.app">Appliquer le changement fiscal</span></button></div>
+  </div>
+
+  <div class="boe pend" id="b2">
+    <div class="bh"><div><div class="btit">Orden HAC/234/2026 — procedimiento de presentación del modelo 303 ejercicio 2026</div><div class="bmeta">BOE-A-2026-4956 · Publié 20 mar 2026 · Détecté 20 mar 08h01</div></div><span class="badge bpend" id="b2b">⏳ En attente</span></div>
+    <div class="bai"><div class="bail">🤖 Analyse IA</div><div class="bait">Mise à jour du formulaire du Modèle 303 pour 2026. Pas de changement de taux, seulement format de présentation. Impact faible.</div></div>
+    <div class="brules"><span class="rtag">MODELO_303</span></div>
+    <div class="bact" id="b2a"><button class="btn btn-g" onclick="toast('📄',T('toast.boe'))">📄 Voir le BOE</button><button class="btn btn-d" onclick="ignoreBOE('b2')">🚫 <span class="t" data-k="boe.ign2">Ignorer (pas de changement de taux)</span></button></div>
+  </div>
+
+  <div class="st" style="margin-top:24px t" data-k="boe.hist">Historique récent</div>
+  <div class="boe"><div class="bh"><div><div class="btit">Ley 5/2025 medidas fiscales autónomos — exención IRPF nuevos autónomos</div><div class="bmeta">BOE-A-2025-1234 · Publié 15 jan 2025 · Appliqué 16 jan 2025</div></div><span class="badge bok">✅ Appliqué</span></div><div class="bai"><div class="bail">Changement appliqué</div><div class="bait">IRPF_NUEVOS_AUTONOMOS: taux 0,07 → 0,05 à partir du 2025-02-01</div></div></div>
+  <div class="boe"><div class="bh"><div><div class="btit">Real Decreto actualización epígrafe IAE actividades digitales</div><div class="bmeta">BOE-A-2025-8901 · Publié 5 jun 2025 · Ignoré 6 jun 2025</div></div><span class="badge bign">🚫 Ignoré</span></div><div class="bai"><div class="bail">Motif</div><div class="bait">Faux positif — n'affecte pas les taux d'imposition ni les règles de déduction</div></div></div>
+</div>
+
+</main>
+</div>
+
+<div class="toast" id="toast"><span id="ti">✅</span><span id="tm">Message</span></div>
+
+<script>
+// ── TRADUCTIONS ──
+const TR={
+fr:{
+  'nav.overview':"Vue d'ensemble",'nav.users':'Utilisateurs','nav.revenue':'Revenus','nav.activity':'Activité','nav.boe':'Veille BOE','nav.back':"Retour à l'app",
+  'admin.access':'Accès Super Admin','ov.sub':'Tableau de bord en temps réel','live':'En direct',
+  'kpi.mrr':'MRR Estimé','kpi.mrr.s':'Revenus mensuels récurrents','kpi.users':'Utilisateurs','kpi.conv':'Conversion','kpi.conv.s':'Gratuit → Plan payant','kpi.alerts':'Alertes','kpi.act':'Actives','kpi.failed':'Paiements échoués',
+  'plans.dist':'Répartition des plans','plan.free':'Plan Gratuit','plan.basic':'Plan Basique','plan.pro':'Plan Pro',
+  'recent.users':'Dernières inscriptions','product.act':'Activité produit','act.inv':'Factures totales','act.ocr':'Scannées OCR','act.decl':'Déclarations',
+  'nav.users':'Utilisateurs','users.search':'Rechercher un utilisateur...','th.user':'Utilisateur','th.plan':'Plan','th.status':'Statut','th.reg':'Inscription','th.ren':'Renouvellement','th.act':'Actions',
+  'dd.chg':'Changer le plan','dd.susp':'Suspendre',
+  'rev.sub':'Métriques de monétisation en temps réel','rev.bkd':'Décomposition des revenus','rev.subs':'Abonnements actifs récents',
+  'act.sub':'30 derniers jours','ocr.perf':'Performance OCR','ocr.tot':'Total scannées','ocr.hi':'Haute confiance','ocr.acc':'Précision OCR',
+  'inv.day':'Factures par jour — 7 derniers jours','th.date':'Date','th.total':'Total','th.iss':'Émises','th.rec':'Reçues','decl.gen':'Déclarations générées',
+  'boe.sub':'Changements fiscaux détectés automatiquement','boe.pend':'⚠️ Alertes en attente de révision','boe.hist':'Historique récent',
+  'boe.ign':'Ignorer','boe.ign2':'Ignorer (pas de changement de taux)','boe.app':'Appliquer le changement fiscal',
+  'toast.plan':'Plan modifié en','toast.susp':'Compte suspendu','toast.ign':'Alerte BOE ignorée','toast.app':'Règle fiscale mise à jour','toast.boe':"Ouverture du BOE...",'toast.back':"Retour à l'application..."
+},
+es:{
+  'nav.overview':'Vista general','nav.users':'Usuarios','nav.revenue':'Ingresos','nav.activity':'Actividad','nav.boe':'Vigilancia BOE','nav.back':'Volver a la app',
+  'admin.access':'Acceso Super Admin','ov.sub':'Panel de control en tiempo real','live':'En vivo',
+  'kpi.mrr':'MRR Estimado','kpi.mrr.s':'Ingresos mensuales recurrentes','kpi.users':'Usuarios','kpi.conv':'Conversión','kpi.conv.s':'Gratuito → Plan de pago','kpi.alerts':'Alertas','kpi.act':'Activas','kpi.failed':'Pagos fallidos',
+  'plans.dist':'Distribución de planes','plan.free':'Plan Gratuito','plan.basic':'Plan Básico','plan.pro':'Plan Pro',
+  'recent.users':'Últimos registros','product.act':'Actividad del producto','act.inv':'Facturas totales','act.ocr':'Escaneadas OCR','act.decl':'Declaraciones',
+  'users.search':'Buscar usuario...','th.user':'Usuario','th.plan':'Plan','th.status':'Estado','th.reg':'Registro','th.ren':'Renovación','th.act':'Acciones',
+  'dd.chg':'Cambiar plan','dd.susp':'Suspender',
+  'rev.sub':'Métricas de monetización en tiempo real','rev.bkd':'Desglose de ingresos','rev.subs':'Suscripciones activas recientes',
+  'act.sub':'Últimos 30 días','ocr.perf':'Rendimiento OCR','ocr.tot':'Total escaneadas','ocr.hi':'Alta confianza','ocr.acc':'Precisión OCR',
+  'inv.day':'Facturas por día — últimos 7 días','th.date':'Fecha','th.total':'Total','th.iss':'Emitidas','th.rec':'Recibidas','decl.gen':'Declaraciones generadas',
+  'boe.sub':'Cambios fiscales detectados automáticamente','boe.pend':'⚠️ Alertas pendientes de revisión','boe.hist':'Historial reciente',
+  'boe.ign':'Ignorar','boe.ign2':'Ignorar (sin cambio de tipos)','boe.app':'Aplicar cambio fiscal',
+  'toast.plan':'Plan cambiado a','toast.susp':'Cuenta suspendida','toast.ign':'Alerta BOE ignorada','toast.app':'Regla fiscal actualizada','toast.boe':'Abriendo BOE...','toast.back':'Volviendo a la aplicación...'
+},
+en:{
+  'nav.overview':'Overview','nav.users':'Users','nav.revenue':'Revenue','nav.activity':'Activity','nav.boe':'BOE Watch','nav.back':'Back to app',
+  'admin.access':'Super Admin Access','ov.sub':'Real-time control panel','live':'Live',
+  'kpi.mrr':'Estimated MRR','kpi.mrr.s':'Monthly recurring revenue','kpi.users':'Users','kpi.conv':'Conversion','kpi.conv.s':'Free → Paid plan','kpi.alerts':'Alerts','kpi.act':'Active','kpi.failed':'Failed payments',
+  'plans.dist':'Plan distribution','plan.free':'Free Plan','plan.basic':'Basic Plan','plan.pro':'Pro Plan',
+  'recent.users':'Latest signups','product.act':'Product activity','act.inv':'Total invoices','act.ocr':'OCR scanned','act.decl':'Declarations',
+  'users.search':'Search user...','th.user':'User','th.plan':'Plan','th.status':'Status','th.reg':'Registered','th.ren':'Renewal','th.act':'Actions',
+  'dd.chg':'Change plan','dd.susp':'Suspend',
+  'rev.sub':'Real-time monetization metrics','rev.bkd':'Revenue breakdown','rev.subs':'Recent active subscriptions',
+  'act.sub':'Last 30 days','ocr.perf':'OCR performance','ocr.tot':'Total scanned','ocr.hi':'High confidence','ocr.acc':'OCR accuracy',
+  'inv.day':'Invoices per day — last 7 days','th.date':'Date','th.total':'Total','th.iss':'Issued','th.rec':'Received','decl.gen':'Generated declarations',
+  'boe.sub':'Tax changes detected automatically','boe.pend':'⚠️ Alerts pending review','boe.hist':'Recent history',
+  'boe.ign':'Ignore','boe.ign2':'Ignore (no rate change)','boe.app':'Apply tax change',
+  'toast.plan':'Plan changed to','toast.susp':'Account suspended','toast.ign':'BOE alert ignored','toast.app':'Tax rule updated','toast.boe':'Opening BOE...','toast.back':'Going back to the app...'
+}};
+
+let lang='fr';
+function T(k){return TR[lang][k]||TR.fr[k]||k}
+
+function applyTR(){
+  document.querySelectorAll('.t[data-k]').forEach(el=>{
+    const v=T(el.getAttribute('data-k'));
+    if(v)el.textContent=v;
+  });
+  document.querySelectorAll('.t-ph[data-k]').forEach(el=>{
+    const v=T(el.getAttribute('data-k'));
+    if(v)el.placeholder=v;
+  });
+}
+
+function setLang(l,btn){
+  lang=l;
+  document.querySelectorAll('.lb').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyTR();
+  const msgs={fr:'Français activé',es:'Español activado',en:'English activated'};
+  toast('🌐',msgs[l]);
+}
+
+// ── NAVIGATION ──
+function nav(el){
+  if(!el)return;
+  const pid=el.getAttribute('data-page');
+  if(!pid)return;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  const tp=document.getElementById('page-'+pid);
+  if(tp)tp.classList.add('active');
+  el.classList.add('active');
+  closeSb();
+  const mc=document.getElementById('mc');
+  if(mc)mc.scrollTop=0;
+}
+
+// ── SIDEBAR ──
+function toggleSb(){
+  const sb=document.getElementById('sb');
+  const ov=document.getElementById('ov');
+  const hb=document.getElementById('hbg');
+  if(sb.classList.contains('open')){closeSb()}
+  else{sb.classList.add('open');ov.classList.add('active');hb.classList.add('open')}
+}
+function closeSb(){
+  document.getElementById('sb').classList.remove('open');
+  document.getElementById('ov').classList.remove('active');
+  document.getElementById('hbg').classList.remove('open');
+}
+
+// ── DROPDOWN ──
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.dd'))document.querySelectorAll('.dm').forEach(m=>m.classList.remove('open'));
+});
+function tdd(btn){
+  const m=btn.nextElementSibling;
+  const was=m.classList.contains('open');
+  document.querySelectorAll('.dm').forEach(x=>x.classList.remove('open'));
+  if(!was)m.classList.add('open');
+}
+
+// ── ACTIONS UTILISATEURS ──
+function chgPlan(item,label,cls){
+  const row=item.closest('tr');
+  const pb=row.querySelector('.t-plan');
+  if(pb){pb.className='badge t-plan '+cls;pb.textContent=label}
+  item.closest('.dm').classList.remove('open');
+  toast('✅',T('toast.plan')+' '+label);
+}
+function suspUser(item){
+  const msg={fr:'Suspendre ce compte ?',es:'¿Suspender esta cuenta?',en:'Suspend this account?'};
+  if(confirm(msg[lang]||msg.fr)){
+    const row=item.closest('tr');
+    row.style.opacity='0.35';
+    row.style.transition='opacity .3s';
+    item.closest('.dm').classList.remove('open');
+    toast('🚫',T('toast.susp'));
+  }
+}
+
+// ── BOE ──
+function ignoreBOE(id){
+  const card=document.getElementById(id);
+  const badge=document.getElementById(id+'b');
+  const acts=document.getElementById(id+'a');
+  const labels={fr:'Ignoré',es:'Ignorado',en:'Ignored'};
+  card.classList.remove('pend');
+  badge.className='badge bign';
+  badge.textContent='🚫 '+(labels[lang]||labels.fr);
+  const done={fr:'Marqué comme ignoré',es:'Marcado como ignorado',en:'Marked as ignored'};
+  acts.innerHTML='<span style="font-size:12px;color:var(--text3)">'+(done[lang]||done.fr)+'</span>';
+  toast('🚫',T('toast.ign'));
+}
+function applyBOE(id){
+  const card=document.getElementById(id);
+  const badge=document.getElementById(id+'b');
+  const acts=document.getElementById(id+'a');
+  const labels={fr:'Appliqué',es:'Aplicado',en:'Applied'};
+  const done={fr:'Règle fiscale appliquée',es:'Regla fiscal aplicada',en:'Tax rule applied'};
+  card.classList.remove('pend');
+  badge.className='badge bok';
+  badge.textContent='✅ '+(labels[lang]||labels.fr);
+  acts.innerHTML='<span style="display:inline-flex;align-items:center;gap:6px;background:var(--green-g);border:1px solid rgba(16,185,129,.25);color:var(--green);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px">✅ '+(done[lang]||done.fr)+'</span>';
+  toast('✅',T('toast.app'));
+}
+
+// ── TOAST ──
+let tt;
+function toast(icon,msg){
+  clearTimeout(tt);
+  document.getElementById('ti').textContent=icon;
+  document.getElementById('tm').textContent=msg;
+  const el=document.getElementById('toast');
+  el.classList.add('show');
+  tt=setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+// ── FERMER DROPDOWN AU SCROLL ──
+document.getElementById('mc').addEventListener('scroll',()=>{
+  document.querySelectorAll('.dm').forEach(m=>m.classList.remove('open'));
+},{passive:true});
+
+// ── INIT ──
+applyTR();
+</script>
+</body>
+</html>
