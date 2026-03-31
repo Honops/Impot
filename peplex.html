@@ -1,0 +1,3133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Restaurant</title>
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+
+<body>
+  <header class="app-header">
+    <div class="app-header-inner">
+      <div>
+        <h1>Dashboard Restaurant</h1>
+        <p>Gestion des plats, menus semaine/week-end et événements</p>
+      </div>
+      <div class="today-info">
+        <span id="todayLabel">Aujourd’hui</span>
+        <span id="todayDate"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- Colonne gauche : formulaire -->
+    <section class="panel panel-form">
+      <h2>Ajouter / modifier un plat</h2>
+
+      <form id="dishForm" autocomplete="off">
+        <!-- Identifiant caché pour édition -->
+        <input type="hidden" id="dishId">
+
+        <div class="form-group">
+          <label for="dishName">Nom du plat</label>
+          <input type="text" id="dishName" placeholder="Ex: Salade César" required>
+        </div>
+
+        <div class="form-group">
+          <label for="dishPrice">Prix (€)</label>
+          <input type="number" id="dishPrice" step="0.01" placeholder="10.50" required>
+        </div>
+
+        <div class="form-group">
+          <label for="dishCategory">Catégorie</label>
+          <select id="dishCategory" required>
+            <option value="" disabled selected>Choisir</option>
+            <option value="entree">Entrée</option>
+            <option value="plat">Plat</option>
+            <option value="dessert">Dessert</option>
+            <option value="boisson">Boisson</option>
+            <option value="promo">Promo</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="dishMenuType">Type de menu</label>
+          <select id="dishMenuType" required>
+            <option value="" disabled selected>Choisir</option>
+            <option value="semaine">Menu semaine</option>
+            <option value="weekend">Menu week-end</option>
+            <option value="jour">Menu du jour</option>
+            <option value="evenement">Événement</option>
+          </select>
+        </div>
+
+        <!-- Bloc événement : affichage dynamique -->
+        <div id="eventBlock" class="event-block" style="display:none;">
+          <div class="form-group">
+            <label for="eventSelect" id="eventSelectLabel">Événement</label>
+            <select id="eventSelect">
+              <!-- Options ajoutées en JS -->
+            </select>
+            <small class="hint-text" id="eventHint">
+              Choisissez un événement fixe (Noël…), variable (Ramadan…) ou personnalisé.
+            </small>
+          </div>
+
+          <div class="form-group" id="eventDateGroup" style="display:none;">
+            <label for="eventDate" id="eventDateLabel">Date de l'événement</label>
+            <input type="date" id="eventDate">
+          </div>
+
+          <div class="form-group" id="eventNameGroup" style="display:none;">
+            <label for="eventName" id="eventNameLabel">Nom de la fête</label>
+            <input type="text" id="eventName" placeholder="Nom de la fête (ex: Soirée Africaine)">
+          </div>
+
+          <p class="limits-info" id="eventLimitsInfo">
+            Règles : max 1 événement par jour, et jusqu’à 4 événements programmés à l’avance.
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label for="dishMedia">Média (image ou vidéo)</label>
+          <input type="file" id="dishMedia" accept="image/*,video/*">
+          <small class="hint-text">Optionnel. Taille raisonnable pour un chargement rapide.</small>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn primary" id="submitDishBtn">Ajouter le plat</button>
+          <button type="button" class="btn secondary" id="resetDishBtn">Réinitialiser</button>
+        </div>
+
+        <p class="form-message" id="formMessage"></p>
+      </form>
+    </section>
+
+    <!-- Colonne droite : listes -->
+    <section class="panel panel-list">
+      <header class="panel-header">
+        <div>
+          <h2>Plats enregistrés</h2>
+          <p>Filtrez par type de menu ou événement.</p>
+        </div>
+
+        <div class="filters">
+          <select id="filterMenuType">
+            <option value="all">Tous les types</option>
+            <option value="semaine">Semaine</option>
+            <option value="weekend">Week-end</option>
+            <option value="jour">Menu du jour</option>
+            <option value="evenement">Événements</option>
+          </select>
+
+          <select id="filterCategory">
+            <option value="all">Toutes catégories</option>
+            <option value="entree">Entrées</option>
+            <option value="plat">Plats</option>
+            <option value="dessert">Desserts</option>
+            <option value="boisson">Boissons</option>
+            <option value="promo">Promos</option>
+          </select>
+        </div>
+      </header>
+
+      <!-- Résumé des prochains événements -->
+      <section class="event-summary">
+        <h3>Prochains événements</h3>
+        <ul id="upcomingEventsList">
+          <!-- Rempli en JS -->
+        </ul>
+        <p class="hint-text">
+          Les événements sont prioritaires dans le menu public le jour J.
+        </p>
+      </section>
+
+      <!-- Tableau des plats -->
+      <section class="dish-list">
+        <div id="menuDashboard" class="table-wrapper">
+          <p>Chargement...</p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- JS Modules -->
+  <script type="module" src="js/dashboardInit.js"></script>
+</body>
+</html>
+
+css
+/* =========
+   Reset simple
+   ========= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
+/* =========
+   Layout global
+   ========= */
+.app-header {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+  background: radial-gradient(circle at top left, #1d2437, #020617);
+  padding: 1rem 1.5rem;
+}
+
+.app-header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  color: #f9fafb;
+}
+
+.app-header p {
+  margin: 0.2rem 0 0;
+  font-size: 0.95rem;
+  color: #9ca3af;
+}
+
+.today-info {
+  text-align: right;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.today-info span:first-child {
+  display: block;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.app-main {
+  max-width: 1200px;
+  margin: 1.5rem auto;
+  padding: 0 1.5rem 2rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr);
+  gap: 1.5rem;
+}
+
+/* Stacking on small screens */
+@media (max-width: 900px) {
+  .app-main {
+    grid-template-columns: 1fr;
+  }
+
+  .app-header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .today-info {
+    text-align: left;
+  }
+}
+
+/* =========
+   Panels
+   ========= */
+.panel {
+  background: linear-gradient(to bottom right, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.92));
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.85);
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.panel h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+  color: #f9fafb;
+}
+
+.panel p {
+  margin: 0;
+}
+
+.panel-form {
+  align-self: flex-start;
+}
+
+.panel-list {
+  align-self: stretch;
+}
+
+/* =========
+   Formulaire
+   ========= */
+form {
+  margin-top: 0.75rem;
+}
+
+.form-group {
+  margin-bottom: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+label {
+  font-size: 0.9rem;
+  color: #e5e7eb;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select {
+  width: 100%;
+  padding: 0.55rem 0.6rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.8);
+  background: #020617;
+  color: #e5e7eb;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+
+input[type="file"] {
+  font-size: 0.85rem;
+  color: #e5e7eb;
+}
+
+input:focus,
+select:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.5);
+  background: #020617;
+}
+
+::placeholder {
+  color: #6b7280;
+}
+
+.hint-text {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.limits-info {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  color: #f97316;
+}
+
+/* Bloc événement */
+.event-block {
+  margin-top: 0.5rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.75rem;
+  border: 1px dashed rgba(251, 191, 36, 0.8);
+  background: rgba(24, 24, 27, 0.9);
+}
+
+/* =========
+   Boutons
+   ========= */
+.form-actions {
+  margin-top: 0.6rem;
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  transition: background-color 0.16s ease, transform 0.1s ease, box-shadow 0.16s ease;
+}
+
+.btn.primary {
+  background: linear-gradient(to right, #22c55e, #16a34a);
+  color: #022c22;
+  box-shadow: 0 12px 25px rgba(16, 185, 129, 0.35);
+}
+
+.btn.primary:hover {
+  background: linear-gradient(to right, #4ade80, #22c55e);
+  transform: translateY(-1px);
+}
+
+.btn.secondary {
+  background: rgba(15, 23, 42, 0.9);
+  color: #e5e7eb;
+  border: 1px solid rgba(148, 163, 184, 0.9);
+}
+
+.btn.secondary:hover {
+  background: #020617;
+}
+
+/* =========
+   Messages formulaire
+   ========= */
+.form-message {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  min-height: 1em;
+}
+
+.form-message.success {
+  color: #4ade80;
+}
+
+.form-message.error {
+  color: #f97373;
+}
+
+/* =========
+   Panel liste / filtres
+   ========= */
+.panel-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.panel-header h2 {
+  margin-bottom: 0.1rem;
+}
+
+.panel-header p {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.filters {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.filters select {
+  min-width: 140px;
+}
+
+@media (max-width: 700px) {
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filters {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .filters select {
+    flex: 1;
+  }
+}
+
+/* =========
+   Résumé événements
+   ========= */
+.event-summary {
+  margin-top: 0.2rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.event-summary h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.event-summary ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.event-summary li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  border-bottom: 1px dashed rgba(55, 65, 81, 0.7);
+}
+
+.event-summary li:last-child {
+  border-bottom: none;
+}
+
+.event-summary .hint-text {
+  margin-top: 0.4rem;
+}
+
+/* =========
+   Tableau des plats
+   ========= */
+.table-wrapper {
+  margin-top: 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.9);
+}
+
+/* Table styles de base inspirés des bonnes pratiques responsive */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  color: #e5e7eb;
+}
+
+thead {
+  background: rgba(15, 23, 42, 0.95);
+}
+
+th,
+td {
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+}
+
+th {
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ca3af;
+}
+
+tbody tr:nth-child(even) {
+  background: rgba(15, 23, 42, 0.8);
+}
+
+tbody tr:hover {
+  background: rgba(30, 64, 175, 0.55);
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.badge.menu-semaine {
+  background: rgba(59, 130, 246, 0.18);
+  color: #bfdbfe;
+}
+
+.badge.menu-weekend {
+  background: rgba(244, 114, 182, 0.18);
+  color: #f9a8d4;
+}
+
+.badge.menu-jour {
+  background: rgba(34, 197, 94, 0.2);
+  color: #bbf7d0;
+}
+
+.badge.menu-evenement {
+  background: rgba(251, 191, 36, 0.18);
+  color: #facc15;
+}
+
+.badge.category {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  color: #e5e7eb;
+}
+
+/* Actions dans le tableau */
+.table-actions {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.action-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.7rem;
+  cursor: pointer;
+  background: rgba(15, 23, 42, 0.9);
+  color: #e5e7eb;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  transition: background-color 0.16s ease, transform 0.08s ease;
+}
+
+.action-btn:hover {
+  background: #020617;
+  transform: translateY(-1px);
+}
+
+.action-btn.danger {
+  border-color: rgba(248, 113, 113, 0.9);
+  color: #fecaca;
+}
+
+/* =========
+   Responsive table sur mobile
+   ========= */
+@media (max-width: 750px) {
+  thead {
+    display: none;
+  }
+
+  table,
+  tbody,
+  tr,
+  td {
+    display: block;
+    width: 100%;
+  }
+
+  tr {
+    border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+    padding: 0.35rem 0.4rem;
+  }
+
+  td {
+    text-align: right;
+    padding: 0.25rem 0.4rem;
+    border-bottom: none;
+    position: relative;
+  }
+
+  td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 0;
+    width: 50%;
+    padding-right: 0.5rem;
+    font-weight: 500;
+    text-align: left;
+    color: #9ca3af;
+    font-size: 0.75rem;
+  }
+}
+
+js/
+│
+├── supabaseClient.js
+├── dashboardInit.js
+// js/supabaseClient.js
+
+// ⚠️ À personnaliser avec TES clés Supabase
+const SUPABASE_URL = 'https://TON-PROJET.supabase.co';
+const SUPABASE_ANON_KEY = 'TON_ANON_PUBLIC_KEY';
+
+// Si tu utilises le CDN <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+// la fonction createClient est disponible dans l'objet global `supabase`.[web:26]
+const { createClient } = supabase;
+
+// Client unique pour tout le dashboard
+export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+✅✅
+
+// js/dashboardInit.js
+import { supabaseClient } from './supabaseClient.js';
+// Ces imports pointeront vers les fichiers que l’on va créer ensuite
+import { setupAddDishForm } from './addDish.js';
+import { loadAndRenderDishes } from './ui/dashboardUI.js';
+import { initEventUI } from './ui/eventUI.js';
+
+document.addEventListener('DOMContentLoaded', () => {
+  initTodayHeader();
+  initFilters();
+  initFormReset();
+
+  // Initialiser UI des événements (options, affichage dynamique)
+  initEventUI();
+
+  // Initialiser la logique du formulaire d’ajout / édition
+  setupAddDishForm();
+
+  // Charger les plats existants et les afficher dans le tableau
+  loadAndRenderDishes();
+});
+
+/**
+ * Affiche la date du jour dans le header ("Aujourd’hui", "13 mars 2026")
+ */
+function initTodayHeader() {
+  const todayDateEl = document.getElementById('todayDate');
+  if (!todayDateEl) return;
+
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  todayDateEl.textContent = formatter.format(now);
+}
+
+/**
+ * Initialise les filtres (menu_type, catégorie).
+ * Pour l’instant, on se contente juste d’écouter les changements
+ * et de rappeler loadAndRenderDishes(). La logique détaillée sera dans dashboardUI.js.
+ */
+function initFilters() {
+  const filterMenuType = document.getElementById('filterMenuType');
+  const filterCategory = document.getElementById('filterCategory');
+
+  if (filterMenuType) {
+    filterMenuType.addEventListener('change', () => {
+      loadAndRenderDishes();
+    });
+  }
+
+  if (filterCategory) {
+    filterCategory.addEventListener('change', () => {
+      loadAndRenderDishes();
+    });
+  }
+}
+
+/**
+ * Bouton "Réinitialiser" du formulaire :
+ * on nettoie les champs, enlève l’id de plat en cours d’édition, remet le bouton en mode "Ajouter".
+ */
+function initFormReset() {
+  const resetBtn = document.getElementById('resetDishBtn');
+  const dishForm = document.getElementById('dishForm');
+  const dishIdInput = document.getElementById('dishId');
+  const submitBtn = document.getElementById('submitDishBtn');
+  const formMessage = document.getElementById('formMessage');
+
+  if (!resetBtn || !dishForm) return;
+
+  resetBtn.addEventListener('click', () => {
+    dishForm.reset();
+    if (dishIdInput) dishIdInput.value = '';
+    if (submitBtn) submitBtn.textContent = 'Ajouter le plat';
+    if (formMessage) {
+      formMessage.textContent = '';
+      formMessage.className = 'form-message';
+    }
+
+    // Masquer le bloc événement si visible
+    const eventBlock = document.getElementById('eventBlock');
+    if (eventBlock) eventBlock.style.display = 'none';
+  });
+}
+
+// js/addDish.js
+import { supabaseClient } from './supabaseClient.js';
+import { loadAndRenderDishes } from './ui/dashboardUI.js';
+import { applyEventVisibilityRules, getEventPayloadFromForm } from './ui/eventUI.js';
+import { checkCanCreateEventForDate } from './utils/limits.js';
+
+export function setupAddDishForm() {
+  const form = document.getElementById('dishForm');
+  const menuTypeSelect = document.getElementById('dishMenuType');
+
+  if (!form) return;
+
+  // Affichage dynamique du bloc événement en fonction du type de menu
+  if (menuTypeSelect) {
+    menuTypeSelect.addEventListener('change', () => {
+      applyEventVisibilityRules();
+    });
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await handleSubmit();
+  });
+}
+
+async function handleSubmit() {
+  const dishId = document.getElementById('dishId')?.value || '';
+  const name = document.getElementById('dishName')?.value?.trim();
+  const price = parseFloat(document.getElementById('dishPrice')?.value || '0');
+  const category = document.getElementById('dishCategory')?.value;
+  const menuType = document.getElementById('dishMenuType')?.value;
+  const mediaInput = document.getElementById('dishMedia');
+  const formMessage = document.getElementById('formMessage');
+  const submitBtn = document.getElementById('submitDishBtn');
+
+  if (!name || !price || !category || !menuType) {
+    showFormMessage('Veuillez remplir tous les champs obligatoires.', 'error');
+    return;
+  }
+
+  // Gestion événement : vérifier limites et récupérer event_name / event_date
+  let eventPayload = { event_name: null, event_date: null };
+
+  if (menuType === 'evenement') {
+    eventPayload = getEventPayloadFromForm(); // { event_name, event_date, eventType }
+    if (!eventPayload.event_name || !eventPayload.event_date) {
+      showFormMessage('Veuillez choisir un événement ou renseigner son nom et sa date.', 'error');
+      return;
+    }
+
+    // Vérifier limites : pas plus de 4 events futurs + pas 2 events le même jour
+    const canCreate = await checkCanCreateEventForDate(
+      supabaseClient,
+      eventPayload.event_date,
+      dishId ? Number(dishId) : null
+    );
+
+    if (!canCreate.ok) {
+      showFormMessage(canCreate.message, 'error');
+      return;
+    }
+  }
+
+  // Upload média si nécessaire
+  let media_url = null;
+  let media_type = null;
+
+  if (mediaInput && mediaInput.files && mediaInput.files[0]) {
+    try {
+      const { uploadMedia } = await import('./utils/mediaUpload.js');
+      const uploaded = await uploadMedia(mediaInput.files[0]);
+      media_url = uploaded.media_url;
+      media_type = uploaded.media_type;
+    } catch (err) {
+      console.error(err);
+      showFormMessage('Erreur lors du téléchargement du média.', 'error');
+      return;
+    }
+  }
+
+  const payload = {
+    name,
+    price,
+    category,
+    menu_type: menuType,
+    event_name: eventPayload.event_name,
+    event_date: eventPayload.event_date,
+    media_url,
+    media_type,
+    is_visible: true,
+  };
+
+  try {
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = dishId ? 'Mise à jour...' : 'Ajout...';
+    }
+
+    let error = null;
+
+    if (dishId) {
+      // UPDATE
+      const { error: updateError } = await supabaseClient
+        .from('menu_items')
+        .update(payload)
+        .eq('id', dishId);
+
+      error = updateError;
+    } else {
+      // INSERT
+      const { error: insertError } = await supabaseClient
+        .from('menu_items')
+        .insert([payload]);
+
+      error = insertError;
+    }
+
+    if (error) {
+      console.error(error);
+      showFormMessage("Erreur lors de l'enregistrement du plat.", 'error');
+    } else {
+      showFormMessage(
+        dishId ? 'Plat mis à jour avec succès.' : 'Plat ajouté avec succès.',
+        'success'
+      );
+      resetFormKeepEventVisibility();
+      await loadAndRenderDishes();
+    }
+  } catch (err) {
+    console.error(err);
+    showFormMessage("Erreur inattendue lors de l'enregistrement.", 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = dishId ? 'Mettre à jour le plat' : 'Ajouter le plat';
+    }
+  }
+}
+
+function showFormMessage(text, type) {
+  const formMessage = document.getElementById('formMessage');
+  if (!formMessage) return;
+  formMessage.textContent = text;
+  formMessage.className = 'form-message ' + (type === 'success' ? 'success' : 'error');
+}
+
+/**
+ * Réinitialise le formulaire mais garde la logique d’affichage/masquage du bloc événement
+ * en fonction du type de menu actuellement sélectionné.
+ */
+function resetFormKeepEventVisibility() {
+  const form = document.getElementById('dishForm');
+  const dishIdInput = document.getElementById('dishId');
+  const submitBtn = document.getElementById('submitDishBtn');
+
+  if (!form) return;
+  form.reset();
+  if (dishIdInput) dishIdInput.value = '';
+  if (submitBtn) submitBtn.textContent = 'Ajouter le plat';
+
+  // Réappliquer la logique d’UI pour le bloc événement
+  applyEventVisibilityRules();
+
+  const formMessage = document.getElementById('formMessage');
+  if (formMessage) {
+    // On garde le message si success, sinon on efface
+    if (!formMessage.classList.contains('success')) {
+      formMessage.textContent = '';
+      formMessage.className = 'form-message';
+    }
+  }
+}
+
+
+// js/dishActions.js
+import { supabaseClient } from './supabaseClient.js';
+import { loadAndRenderDishes } from './ui/dashboardUI.js';
+import { applyEventVisibilityRules } from './ui/eventUI.js';
+
+/**
+ * Prépare les listeners d’actions sur un plat individuel.
+ * À appeler depuis dashboardUI.js après avoir généré les lignes du tableau.
+ */
+export function attachDishRowActions(rowElement, dish) {
+  const editBtn = rowElement.querySelector('[data-action="edit"]');
+  const deleteBtn = rowElement.querySelector('[data-action="delete"]');
+  const toggleVisibleBtn = rowElement.querySelector('[data-action="toggle-visible"]');
+
+  if (editBtn) {
+    editBtn.addEventListener('click', () => {
+      fillFormForEdit(dish);
+    });
+  }
+
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', async () => {
+      await handleDeleteDish(dish.id);
+    });
+  }
+
+  if (toggleVisibleBtn) {
+    toggleVisibleBtn.addEventListener('click', async () => {
+      await handleToggleVisible(dish);
+    });
+  }
+}
+
+/**
+ * Remplit le formulaire pour passer en mode "édition".
+ */
+function fillFormForEdit(dish) {
+  const dishIdInput = document.getElementById('dishId');
+  const nameInput = document.getElementById('dishName');
+  const priceInput = document.getElementById('dishPrice');
+  const categorySelect = document.getElementById('dishCategory');
+  const menuTypeSelect = document.getElementById('dishMenuType');
+  const submitBtn = document.getElementById('submitDishBtn');
+  const formMessage = document.getElementById('formMessage');
+
+  if (!dishIdInput || !nameInput || !priceInput || !categorySelect || !menuTypeSelect) return;
+
+  dishIdInput.value = dish.id;
+  nameInput.value = dish.name || '';
+  priceInput.value = dish.price != null ? dish.price : '';
+  categorySelect.value = dish.category || '';
+  menuTypeSelect.value = dish.menu_type || '';
+
+  // Gérer l’UI événement
+  applyEventVisibilityRules(dish);
+
+  if (dish.menu_type === 'evenement') {
+    const eventNameInput = document.getElementById('eventName');
+    const eventDateInput = document.getElementById('eventDate');
+
+    if (eventNameInput) eventNameInput.value = dish.event_name || '';
+    if (eventDateInput && dish.event_date) {
+      // event_date est en général une string 'YYYY-MM-DD'
+      eventDateInput.value = dish.event_date;
+    }
+  }
+
+  if (submitBtn) {
+    submitBtn.textContent = 'Mettre à jour le plat';
+  }
+
+  if (formMessage) {
+    formMessage.textContent = '';
+    formMessage.className = 'form-message';
+  }
+
+  // Scroll vers le formulaire pour édition plus confortable
+  document.getElementById('dishForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/**
+ * Supprime un plat.
+ */
+async function handleDeleteDish(dishId) {
+  const confirmDelete = window.confirm('Voulez-vous vraiment supprimer ce plat ?');
+  if (!confirmDelete) return;
+
+  try {
+    const { error } = await supabaseClient
+      .from('menu_items')
+      .delete()
+      .eq('id', dishId);
+
+    if (error) {
+      console.error(error);
+      alert('Erreur lors de la suppression du plat.');
+      return;
+    }
+
+    await loadAndRenderDishes();
+  } catch (err) {
+    console.error(err);
+    alert('Erreur inattendue lors de la suppression.');
+  }
+}
+
+/**
+ * Bascule la visibilité (is_visible) d’un plat.
+ */
+async function handleToggleVisible(dish) {
+  try {
+    const { error } = await supabaseClient
+      .from('menu_items')
+      .update({ is_visible: !dish.is_visible })
+      .eq('id', dish.id);
+
+    if (error) {
+      console.error(error);
+      alert('Erreur lors de la mise à jour de la visibilité.');
+      return;
+    }
+
+    await loadAndRenderDishes();
+  } catch (err) {
+    console.error(err);
+    alert('Erreur inattendue lors de la mise à jour.');
+  }
+}
+
+
+// logic/menuLogic.js
+
+/**
+ * Détermine le type de menu "actif" pour une date donnée.
+ * Priorité :
+ * 1. S'il existe un événement ce jour-là => "evenement"
+ * 2. Sinon, si c'est samedi ou dimanche => "weekend"
+ * 3. Sinon, si tu as défini un "menu du jour" => "jour"
+ * 4. Sinon => "semaine"
+ *
+ * @param {Date} dateObj - Date pour laquelle on veut le menu actif
+ * @param {Array} eventsForDate - Liste des événements (plats) pour cette date
+ * @param {boolean} hasDailyMenu - true si tu as au moins 1 plat de type "jour" pour cette date
+ * @returns {string} "evenement" | "weekend" | "jour" | "semaine"
+ */
+export function getActiveMenuTypeForDate(dateObj, eventsForDate = [], hasDailyMenu = false) {
+  if (eventsForDate && eventsForDate.length > 0) {
+    return 'evenement';
+  }
+
+  if (isWeekend(dateObj)) {
+    return 'weekend';
+  }
+
+  if (hasDailyMenu) {
+    return 'jour';
+  }
+
+  return 'semaine';
+}
+
+/**
+ * Retourne true si la date est un samedi ou dimanche.
+ */
+export function isWeekend(dateObj) {
+  const day = dateObj.getDay(); // 0 = dimanche, 6 = samedi
+  return day === 0 || day === 6;
+}
+
+/**
+ * Filtre une liste complète de plats pour ne garder que ceux du menu "actif"
+ * et visibles.
+ *
+ * @param {Array} allDishes - tous les plats de la BDD
+ * @param {Date} dateObj - date du jour J
+ * @returns {Array} plats filtrés
+ */
+export function getDishesForPublicMenu(allDishes, dateObj) {
+  if (!Array.isArray(allDishes)) return [];
+
+  // 1) récupérer tous les plats événementiels pour cette date
+  const dateStr = toDateOnlyString(dateObj);
+  const eventsForDate = allDishes.filter(
+    (item) =>
+      item.menu_type === 'evenement' &&
+      item.event_date === dateStr &&
+      item.is_visible !== false
+  );
+
+  // 2) vérifier si on a des "menu du jour" visibles
+  const dailyDishes = allDishes.filter(
+    (item) => item.menu_type === 'jour' && item.is_visible !== false
+  );
+  const hasDailyMenu = dailyDishes.length > 0;
+
+  // 3) déterminer le type de menu actif
+  const activeMenuType = getActiveMenuTypeForDate(dateObj, eventsForDate, hasDailyMenu);
+
+  // 4) retourner les plats correspondants
+  if (activeMenuType === 'evenement') {
+    return eventsForDate;
+  }
+
+  if (activeMenuType === 'jour') {
+    return dailyDishes;
+  }
+
+  if (activeMenuType === 'weekend') {
+    return allDishes.filter(
+      (item) => item.menu_type === 'weekend' && item.is_visible !== false
+    );
+  }
+
+  // "semaine"
+  return allDishes.filter(
+    (item) => item.menu_type === 'semaine' && item.is_visible !== false
+  );
+}
+
+/**
+ * Convertit une Date en string "YYYY-MM-DD".
+ */
+export function toDateOnlyString(dateObj) {
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+
+// logic/eventLogic.js
+
+import { toDateOnlyString } from './menuLogic.js';
+
+/**
+ * Types d’événements supportés.
+ *
+ * - type "fixed" : date fixe chaque année (Noël, Nouvel An, Saint-Valentin…)
+ * - type "variable" : nécessite un calcul ou configuration (Ramadan, Tabaski)
+ * - type "custom" : défini par l’admin (nom + date saisis dans le dashboard)
+ */
+export const EVENT_DEFINITIONS = [
+  // Événements à date fixe (exemple pour 2026, mais on peut utiliser l’année de la date cible)
+  {
+    id: 'noel',
+    label: 'Noël',
+    type: 'fixed',
+    getDate: (year) => `${year}-12-25`,
+  },
+  {
+    id: 'nouvel_an',
+    label: 'Nouvel An',
+    type: 'fixed',
+    getDate: (year) => `${year}-01-01`,
+  },
+  {
+    id: 'saint_valentin',
+    label: 'Saint-Valentin',
+    type: 'fixed',
+    getDate: (year) => `${year}-02-14`,
+  },
+
+  // Événements à date variable : ici, on met des placeholders pour 2026.
+  // Plus tard, tu pourras améliorer les calculs ou les rendre configurables.
+  {
+    id: 'ramadan',
+    label: 'Ramadan',
+    type: 'variable',
+    // Exemple : date approximative pour 2026
+    getDate: (year) => {
+      if (year === 2026) return '2026-03-01';
+      // fallback : 1er mars par défaut (à adapter)
+      return `${year}-03-01`;
+    },
+  },
+  {
+    id: 'tabaski',
+    label: 'Tabaski',
+    type: 'variable',
+    getDate: (year) => {
+      if (year === 2026) return '2026-05-27';
+      // fallback (à adapter selon les années)
+      return `${year}-06-01`;
+    },
+  },
+
+  // "custom" sera géré à part via un id spécial
+];
+
+/**
+ * Retourne la liste des options d’événements pour le <select>.
+ * On inclut une option "custom" à la fin.
+ */
+export function getEventOptionsForSelect() {
+  const baseOptions = EVENT_DEFINITIONS.map((evt) => ({
+    value: evt.id,
+    label: evt.label,
+    type: evt.type,
+  }));
+
+  baseOptions.push({
+    value: 'custom',
+    label: 'Événement personnalisé',
+    type: 'custom',
+  });
+
+  return baseOptions;
+}
+
+/**
+ * À partir d’un identifiant d’événement (noel, ramadan, custom, etc.)
+ * et éventuellement d’un objet Date de référence, calcule:
+ * - event_name (nom qui ira en base)
+ * - event_date (string "YYYY-MM-DD")
+ * - event_type ("fixed" | "variable" | "custom")
+ *
+ * Pour "custom", on ne calcule pas : ce sera le formulaire qui fournira
+ * nom + date.
+ *
+ * @param {string} eventId
+ * @param {Date} [referenceDate] - sert à déterminer l’année (par défaut: année en cours)
+ * @returns {{event_name: string|null, event_date: string|null, event_type: string}}
+ */
+export function resolveEventById(eventId, referenceDate = new Date()) {
+  if (!eventId) {
+    return { event_name: null, event_date: null, event_type: null };
+  }
+
+  if (eventId === 'custom') {
+    return { event_name: null, event_date: null, event_type: 'custom' };
+  }
+
+  const def = EVENT_DEFINITIONS.find((evt) => evt.id === eventId);
+  if (!def) {
+    return { event_name: null, event_date: null, event_type: null };
+  }
+
+  const year = referenceDate.getFullYear();
+  const dateStr = def.getDate ? def.getDate(year) : null;
+
+  return {
+    event_name: def.label,
+    event_date: dateStr,
+    event_type: def.type,
+  };
+}
+
+/**
+ * Filtre une liste de plats pour ne garder que les événements futurs (ou à partir d’aujourd’hui),
+ * triés par date croissante.
+ *
+ * @param {Array} dishes - tous les plats (dont certains événementiels)
+ * @param {Date} [fromDate] - date de départ (par défaut: aujourd’hui)
+ * @returns {Array} événements triés
+ */
+export function getUpcomingEvents(dishes, fromDate = new Date()) {
+  if (!Array.isArray(dishes)) return [];
+
+  const fromStr = toDateOnlyString(fromDate);
+
+  const events = dishes.filter((item) => {
+    if (item.menu_type !== 'evenement') return false;
+    if (!item.event_date) return false;
+    if (item.is_visible === false) return false;
+
+    return item.event_date >= fromStr;
+  });
+
+  // Tri par date croissante
+  events.sort((a, b) => {
+    if (a.event_date < b.event_date) return -1;
+    if (a.event_date > b.event_date) return 1;
+    return 0;
+  });
+
+  return events;
+}
+
+/**
+ * Vérifie si une date est déjà utilisée par au moins un événement différent (id différent).
+ * Utilise une liste de plats événementiels (déjà filtrés depuis Supabase).
+ *
+ * @param {Array} events - plats événementiels
+ * @param {string} targetDate - "YYYY-MM-DD"
+ * @param {number|null} currentDishId - si on édite un plat, on exclut cet id
+ * @returns {boolean} true si la date est déjà prise
+ */
+export function isEventDateConflict(events, targetDate, currentDishId = null) {
+  return events.some((evt) => {
+    if (evt.event_date !== targetDate) return false;
+    if (currentDishId != null && evt.id === currentDishId) return false;
+    return true;
+  });
+}
+
+
+// logic/dateUtils.js
+
+/**
+ * Retourne une Date normalisée à minuit (local).
+ */
+export function startOfDay(date = new Date()) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/**
+ * Ajoute un nombre de jours à une date.
+ */
+export function addDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+/**
+ * Formate une date en "YYYY-MM-DD".
+ */
+export function formatDateYMD(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Formate une date en français lisible, ex: "13 mars 2026".
+ */
+export function formatDateLongFr(date) {
+  const d = new Date(date);
+  const formatter = new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+  return formatter.format(d);
+}
+
+/**
+ * Compare deux dates au format "YYYY-MM-DD".
+ * Retourne -1 si a<b, 0 si égal, 1 si a>b.
+ */
+export function compareYmd(a, b) {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
+// ui/dashboardUI.js
+import { supabaseClient } from '../supabaseClient.js';
+import { getUpcomingEvents } from '../logic/eventLogic.js';
+import { attachDishRowActions } from '../dishActions.js';
+
+/**
+ * Charge les plats depuis Supabase, applique les filtres,
+ * rend le tableau + la liste des prochains événements.
+ */
+export async function loadAndRenderDishes() {
+  const container = document.getElementById('menuDashboard');
+  const upcomingList = document.getElementById('upcomingEventsList');
+
+  if (!container) return;
+
+  // Affichage temporaire
+  container.innerHTML = '<p>Chargement...</p>';
+  if (upcomingList) {
+    upcomingList.innerHTML = '<li>Chargement...</li>';
+  }
+
+  // Fetch Supabase
+  const { data, error } = await supabaseClient
+    .from('menu_items')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error(error);
+    container.innerHTML = '<p>Erreur lors du chargement des plats.</p>';
+    if (upcomingList) {
+      upcomingList.innerHTML = '<li>Erreur lors du chargement des événements.</li>';
+    }
+    return;
+  }
+
+  const allDishes = Array.isArray(data) ? data : [];
+
+  // Appliquer filtres
+  const filtered = applyFilters(allDishes);
+
+  // Rendre tableau
+  renderDishesTable(container, filtered);
+
+  // Rendre prochains événements (max 4)
+  if (upcomingList) {
+    const upcoming = getUpcomingEvents(allDishes).slice(0, 4);
+    renderUpcomingEvents(upcomingList, upcoming);
+  }
+}
+
+/**
+ * Applique les filtres de type de menu + catégorie.
+ */
+function applyFilters(allDishes) {
+  const filterMenuType = document.getElementById('filterMenuType');
+  const filterCategory = document.getElementById('filterCategory');
+
+  let menuFilter = filterMenuType ? filterMenuType.value : 'all';
+  let catFilter = filterCategory ? filterCategory.value : 'all';
+
+  return allDishes.filter((dish) => {
+    if (menuFilter !== 'all' && dish.menu_type !== menuFilter) return false;
+    if (catFilter !== 'all' && dish.category !== catFilter) return false;
+    return true;
+  });
+}
+
+/**
+ * Construit le tableau HTML des plats dans le container donné.
+ */
+function renderDishesTable(container, dishes) {
+  if (!dishes.length) {
+    container.innerHTML = '<p>Aucun plat trouvé pour ces filtres.</p>';
+    return;
+  }
+
+  const table = document.createElement('table');
+
+  const thead = document.createElement('thead');
+  thead.innerHTML = `
+    <tr>
+      <th>Nom</th>
+      <th>Prix</th>
+      <th>Catégorie</th>
+      <th>Type</th>
+      <th>Événement</th>
+      <th>Média</th>
+      <th>Visible</th>
+      <th>Actions</th>
+    </tr>
+  `;
+
+  const tbody = document.createElement('tbody');
+
+  dishes.forEach((dish) => {
+    const tr = document.createElement('tr');
+
+    // Nom
+    const tdName = document.createElement('td');
+    tdName.dataset.label = 'Nom';
+    tdName.textContent = dish.name || '';
+    tr.appendChild(tdName);
+
+    // Prix
+    const tdPrice = document.createElement('td');
+    tdPrice.dataset.label = 'Prix';
+    tdPrice.textContent =
+      dish.price != null ? `${Number(dish.price).toFixed(2)} €` : '';
+    tr.appendChild(tdPrice);
+
+    // Catégorie
+    const tdCategory = document.createElement('td');
+    tdCategory.dataset.label = 'Catégorie';
+    const catBadge = document.createElement('span');
+    catBadge.className = 'badge category';
+    catBadge.textContent = formatCategoryLabel(dish.category);
+    tdCategory.appendChild(catBadge);
+    tr.appendChild(tdCategory);
+
+    // Type de menu
+    const tdMenuType = document.createElement('td');
+    tdMenuType.dataset.label = 'Type';
+    const typeBadge = document.createElement('span');
+    typeBadge.className = 'badge ' + getMenuBadgeClass(dish.menu_type);
+    typeBadge.textContent = formatMenuTypeLabel(dish.menu_type);
+    tdMenuType.appendChild(typeBadge);
+    tr.appendChild(tdMenuType);
+
+    // Événement (nom + date)
+    const tdEvent = document.createElement('td');
+    tdEvent.dataset.label = 'Événement';
+    if (dish.menu_type === 'evenement') {
+      const name = dish.event_name || 'Événement';
+      const date = dish.event_date || '';
+      tdEvent.textContent = date ? `${name} (${date})` : name;
+    } else {
+      tdEvent.textContent = '-';
+    }
+    tr.appendChild(tdEvent);
+
+    // Média
+    const tdMedia = document.createElement('td');
+    tdMedia.dataset.label = 'Média';
+    if (dish.media_url) {
+      const link = document.createElement('a');
+      link.href = dish.media_url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = dish.media_type === 'video' ? 'Voir la vidéo' : 'Voir l’image';
+      tdMedia.appendChild(link);
+    } else {
+      tdMedia.textContent = '—';
+    }
+    tr.appendChild(tdMedia);
+
+    // Visible
+    const tdVisible = document.createElement('td');
+    tdVisible.dataset.label = 'Visible';
+    tdVisible.textContent = dish.is_visible === false ? 'Non' : 'Oui';
+    tr.appendChild(tdVisible);
+
+    // Actions
+    const tdActions = document.createElement('td');
+    tdActions.dataset.label = 'Actions';
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'table-actions';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'action-btn';
+    editBtn.textContent = 'Éditer';
+    editBtn.setAttribute('data-action', 'edit');
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'action-btn';
+    toggleBtn.textContent = dish.is_visible === false ? 'Afficher' : 'Masquer';
+    toggleBtn.setAttribute('data-action', 'toggle-visible');
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'action-btn danger';
+    deleteBtn.textContent = 'Supprimer';
+    deleteBtn.setAttribute('data-action', 'delete');
+
+    actionsDiv.appendChild(editBtn);
+    actionsDiv.appendChild(toggleBtn);
+    actionsDiv.appendChild(deleteBtn);
+    tdActions.appendChild(actionsDiv);
+    tr.appendChild(tdActions);
+
+    // Brancher les actions (édition, suppression...)
+    attachDishRowActions(tr, dish);
+
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(thead);
+  table.appendChild(tbody);
+
+  container.innerHTML = '';
+  container.appendChild(table);
+}
+
+/**
+ * Remplit la liste des prochains événements.
+ */
+function renderUpcomingEvents(listEl, upcoming) {
+  listEl.innerHTML = '';
+
+  if (!upcoming.length) {
+    listEl.innerHTML = '<li>Aucun événement programmé.</li>';
+    return;
+  }
+
+  upcoming.forEach((evt) => {
+    const li = document.createElement('li');
+    const left = document.createElement('span');
+    const right = document.createElement('span');
+
+    left.textContent = evt.event_name || 'Événement';
+    right.textContent = evt.event_date || '';
+
+    li.appendChild(left);
+    li.appendChild(right);
+    listEl.appendChild(li);
+  });
+}
+
+/**
+ * Formatage lisible de la catégorie.
+ */
+function formatCategoryLabel(cat) {
+  switch (cat) {
+    case 'entree':
+      return 'Entrée';
+    case 'plat':
+      return 'Plat';
+    case 'dessert':
+      return 'Dessert';
+    case 'boisson':
+      return 'Boisson';
+    case 'promo':
+      return 'Promo';
+    default:
+      return cat || '';
+  }
+}
+
+/**
+ * Formatage lisible du type de menu.
+ */
+function formatMenuTypeLabel(type) {
+  switch (type) {
+    case 'semaine':
+      return 'Semaine';
+    case 'weekend':
+      return 'Week-end';
+    case 'jour':
+      return 'Menu du jour';
+    case 'evenement':
+      return 'Événement';
+    default:
+      return type || '';
+  }
+}
+
+/**
+ * Classe CSS du badge en fonction du type de menu.
+ */
+function getMenuBadgeClass(type) {
+  switch (type) {
+    case 'semaine':
+      return 'menu-semaine';
+    case 'weekend':
+      return 'menu-weekend';
+    case 'jour':
+      return 'menu-jour';
+    case 'evenement':
+      return 'menu-evenement';
+    default:
+      return '';
+  }
+}
+
+
+// ui/eventUI.js
+import { getEventOptionsForSelect, resolveEventById } from '../logic/eventLogic.js';
+import { formatDateYMD } from '../logic/dateUtils.js';
+
+/**
+ * Initialise le select des événements et la logique d’affichage
+ * des champs date / nom custom.
+ */
+export function initEventUI() {
+  const eventSelect = document.getElementById('eventSelect');
+  const eventBlock = document.getElementById('eventBlock');
+
+  if (!eventSelect || !eventBlock) return;
+
+  // Injecter les options dans le select
+  populateEventSelect(eventSelect);
+
+  // Listener changement de type d’événement
+  eventSelect.addEventListener('change', () => {
+    updateEventFieldsVisibility();
+  });
+
+  // Premier état : en fonction du type de menu actuel
+  applyEventVisibilityRules();
+}
+
+/**
+ * Remplit le <select id="eventSelect"> avec les événements définis.
+ */
+function populateEventSelect(selectEl) {
+  selectEl.innerHTML = '';
+
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  placeholder.textContent = 'Choisir un événement';
+  selectEl.appendChild(placeholder);
+
+  const options = getEventOptionsForSelect();
+  options.forEach((opt) => {
+    const option = document.createElement('option');
+    option.value = opt.value;
+    option.textContent = opt.label;
+    selectEl.appendChild(option);
+  });
+}
+
+/**
+ * Montre ou cache le bloc événement selon le type de menu sélectionné.
+ * Si un plat est passé en paramètre (édition), on remplit les champs accordingly.
+ *
+ * @param {Object|null} dish - plat en cours d’édition (optionnel)
+ */
+export function applyEventVisibilityRules(dish = null) {
+  const menuTypeSelect = document.getElementById('dishMenuType');
+  const eventBlock = document.getElementById('eventBlock');
+  const eventSelect = document.getElementById('eventSelect');
+  const eventNameInput = document.getElementById('eventName');
+  const eventDateInput = document.getElementById('eventDate');
+
+  if (!menuTypeSelect || !eventBlock || !eventSelect) return;
+
+  const menuType = menuTypeSelect.value;
+
+  if (menuType === 'evenement') {
+    eventBlock.style.display = 'block';
+
+    if (dish && dish.menu_type === 'evenement') {
+      // Si on édite un plat événementiel, on essaye de retrouver l’option correspondante
+      // Si event_name correspond à un connu (Noël, Ramadan...), sinon "custom"
+      const options = getEventOptionsForSelect();
+      const matching = options.find((opt) => opt.label === dish.event_name);
+
+      if (matching) {
+        eventSelect.value = matching.value;
+      } else {
+        eventSelect.value = 'custom';
+      }
+
+      if (eventNameInput) {
+        eventNameInput.value = dish.event_name || '';
+      }
+      if (eventDateInput && dish.event_date) {
+        eventDateInput.value = dish.event_date;
+      }
+    } else {
+      // Nouveau plat événementiel
+      eventSelect.value = '';
+      if (eventNameInput) eventNameInput.value = '';
+      if (eventDateInput) eventDateInput.value = '';
+    }
+
+    updateEventFieldsVisibility();
+  } else {
+    eventBlock.style.display = 'none';
+  }
+}
+
+/**
+ * Gère l’affichage des champs date / nom custom selon le type d’événement choisi.
+ */
+function updateEventFieldsVisibility() {
+  const eventSelect = document.getElementById('eventSelect');
+  const eventDateGroup = document.getElementById('eventDateGroup');
+  const eventNameGroup = document.getElementById('eventNameGroup');
+  const eventDateInput = document.getElementById('eventDate');
+  const eventNameInput = document.getElementById('eventName');
+
+  if (!eventSelect || !eventDateGroup || !eventNameGroup) return;
+
+  const selected = eventSelect.value;
+
+  if (!selected) {
+    eventDateGroup.style.display = 'none';
+    eventNameGroup.style.display = 'none';
+    return;
+  }
+
+  if (selected === 'custom') {
+    // Custom : l’admin doit fournir nom + date
+    eventNameGroup.style.display = 'block';
+    eventDateGroup.style.display = 'block';
+  } else {
+    // Événement défini (fixed ou variable)
+    const resolved = resolveEventById(selected, new Date());
+    // Pour un événement défini, on calcule la date automatiquement
+    if (eventDateInput && resolved.event_date) {
+      eventDateInput.value = resolved.event_date;
+    }
+    if (eventNameInput) {
+      eventNameInput.value = resolved.event_name || '';
+    }
+
+    // On montre juste la date (informative) et pas le nom custom
+    eventDateGroup.style.display = 'block';
+    eventNameGroup.style.display = 'none';
+  }
+}
+
+/**
+ * Lit les champs du formulaire pour un plat de type "evenement"
+ * et renvoie { event_name, event_date, event_type }.
+ */
+export function getEventPayloadFromForm() {
+  const eventSelect = document.getElementById('eventSelect');
+  const eventDateInput = document.getElementById('eventDate');
+  const eventNameInput = document.getElementById('eventName');
+
+  if (!eventSelect || !eventDateInput || !eventNameInput) {
+    return { event_name: null, event_date: null, event_type: null };
+  }
+
+  const selected = eventSelect.value;
+
+  if (!selected) {
+    return { event_name: null, event_date: null, event_type: null };
+  }
+
+  if (selected === 'custom') {
+    const name = eventNameInput.value.trim();
+    const dateVal = eventDateInput.value;
+    if (!name || !dateVal) {
+      return { event_name: null, event_date: null, event_type: 'custom' };
+    }
+    // On s’assure du format YYYY-MM-DD
+    const dateStr = formatDateYMD(new Date(dateVal));
+    return { event_name: name, event_date: dateStr, event_type: 'custom' };
+  }
+
+  // Événement connu
+  const resolved = resolveEventById(selected, new Date());
+  return {
+    event_name: resolved.event_name,
+    event_date: resolved.event_date,
+    event_type: resolved.event_type,
+  };
+}
+
+
+
+// utils/limits.js
+import { getUpcomingEvents, isEventDateConflict } from '../logic/eventLogic.js';
+import { toDateOnlyString } from '../logic/menuLogic.js';
+
+/**
+ * Vérifie si on peut créer / modifier un plat événementiel pour une date donnée.
+ *
+ * Règles :
+ * - pas plus de 4 événements futurs (y compris celui de cette date),
+ * - un seul événement par jour (hors plat en cours d’édition).
+ *
+ * @param {object} supabaseClient - client Supabase
+ * @param {string} targetDateYmd - date cible au format "YYYY-MM-DD"
+ * @param {number|null} currentDishId - id du plat en cours d’édition (null si création)
+ *
+ * @returns {Promise<{ok: boolean, message: string}>}
+ */
+export async function checkCanCreateEventForDate(
+  supabaseClient,
+  targetDateYmd,
+  currentDishId = null
+) {
+  if (!targetDateYmd) {
+    return { ok: false, message: 'Date de l’événement manquante.' };
+  }
+
+  try {
+    // Récupérer tous les plats événementiels
+    const { data, error } = await supabaseClient
+      .from('menu_items')
+      .select('*')
+      .eq('menu_type', 'evenement');
+
+    if (error) {
+      console.error(error);
+      return {
+        ok: false,
+        message: 'Erreur lors de la vérification des événements existants.',
+      };
+    }
+
+    const events = Array.isArray(data) ? data : [];
+
+    // 1) Conflit de date : un seul événement par jour
+    const hasConflict = isEventDateConflict(events, targetDateYmd, currentDishId);
+    if (hasConflict) {
+      return {
+        ok: false,
+        message:
+          'Il existe déjà un événement à cette date. Supprimez-le ou modifiez-le avant d’en créer un autre.',
+      };
+    }
+
+    // 2) Maximum 4 événements programmés (futurs à partir d’aujourd’hui)
+    const todayStr = toDateOnlyString(new Date());
+    const upcoming = getUpcomingEvents(events, new Date(todayStr));
+
+    // Si on édite un événement déjà futur, on doit exclure ce plat du comptage
+    const filteredUpcoming = upcoming.filter((evt) => {
+      if (currentDishId != null && evt.id === currentDishId) return false;
+      return true;
+    });
+
+    if (filteredUpcoming.length >= 4) {
+      return {
+        ok: false,
+        message:
+          'Vous avez déjà 4 événements programmés. Supprimez-en un avant d’en ajouter un nouveau.',
+      };
+    }
+
+    return { ok: true, message: '' };
+  } catch (err) {
+    console.error(err);
+    return {
+      ok: false,
+      message: 'Erreur inattendue lors de la vérification des limites.',
+    };
+  }
+}
+
+
+
+// utils/mediaUpload.js
+import { supabaseClient } from '../supabaseClient.js';
+
+/**
+ * Upload un fichier (image ou vidéo) vers Supabase Storage.
+ * 
+ * @param {File} file - fichier sélectionné par l'utilisateur
+ * @returns {Promise<{media_url: string, media_type: 'image'|'video'|'unknown'}>}
+ */
+export async function uploadMedia(file) {
+  if (!file || file.size === 0) {
+    throw new Error('Aucun fichier valide fourni.');
+  }
+
+  // Vérifications de base
+  if (file.size > 10 * 1024 * 1024) { // 10MB max
+    throw new Error('Le fichier est trop volumineux (max 10 Mo).');
+  }
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'];
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('Type de fichier non supporté. Utilisez JPG, PNG, WebP ou MP4/WebM.');
+  }
+
+  try {
+    // 1) Déterminer le dossier et le type
+    const mediaType = file.type.startsWith('image/') ? 'image' : 
+                     file.type.startsWith('video/') ? 'video' : 'unknown';
+    
+    const bucketName = 'restaurant-media'; // À créer dans Supabase Storage
+    const folder = mediaType === 'image' ? 'images' : 'videos';
+    
+    // 2) Générer un nom unique : timestamp + hash du nom original
+    const timestamp = Date.now();
+    const fileNameSafe = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const uniqueName = `${timestamp}_${fileNameSafe}`;
+
+    // 3) Upload vers Supabase Storage
+    const { data, error } = await supabaseClient.storage
+      .from(bucketName)
+      .upload(`${folder}/${uniqueName}`, file, {
+        cacheControl: '3600', // 1h cache
+        upsert: false, // ne pas écraser
+      });
+
+    if (error) {
+      console.error('Erreur upload Storage:', error);
+      throw new Error(`Erreur upload: ${error.message}`);
+    }
+
+    // 4) Générer l'URL publique
+    const { data: { publicUrl } } = supabaseClient.storage
+      .from(bucketName)
+      .getPublicUrl(data.path);
+
+    console.log('Upload réussi:', publicUrl);
+
+    return {
+      media_url: publicUrl,
+      media_type: mediaType,
+      file_path: data.path, // pour suppression future si besoin
+    };
+
+  } catch (err) {
+    console.error('Erreur upload:', err);
+    throw err;
+  }
+}
+
+/**
+ * Supprime un média depuis Supabase Storage.
+ * Utilisé par dishActions.js si tu veux supprimer les images lors de la suppression d'un plat.
+ * 
+ * @param {string} filePath - chemin du fichier (ex: "images/123456_salade.jpg")
+ * @returns {Promise<boolean>}
+ */
+export async function deleteMedia(filePath) {
+  if (!filePath) return false;
+
+  try {
+    const { error } = await supabaseClient.storage
+      .from('restaurant-media')
+      .remove([filePath]);
+
+    if (error) {
+      console.error('Erreur suppression média:', error);
+      return false;
+    }
+
+    console.log('Média supprimé:', filePath);
+    return true;
+  } catch (err) {
+    console.error('Erreur suppression:', err);
+    return false;
+  }
+}
+
+/**
+ * Génère un aperçu (thumbnail) pour les vidéos (optionnel).
+ * Pour l'instant, on renvoie juste l'URL publique.
+ */
+export function getMediaPreviewUrl(mediaUrl, mediaType) {
+  return mediaUrl; // L'URL publique suffit pour le dashboard
+}
+
+
+-- Autoriser l'upload public (mais avec vérification côté client)
+create policy "Allow public upload to restaurant-media"
+on storage.objects for insert
+to public
+with check (bucket_id = 'restaurant-media');
+
+-- Autoriser la lecture publique
+create policy "Public read restaurant-media"
+on storage.objects for select
+to public
+using (bucket_id = 'restaurant-media');
+
+-- Autoriser la suppression (pour tes actions)
+create policy "Allow public delete restaurant-media"
+on storage.objects for delete
+to public
+using (bucket_id = 'restaurant-media');
+
+
+tessss✅✅✅✈
+
+✅ dashboard.html + dashboard.css (layout moderne)
+✅ supabaseClient.js (client unique)
+✅ dashboardInit.js (point d'entrée)
+✅ addDish.js (formulaire + insert/update)
+✅ dishActions.js (éditer/supprimer/masquer)
+✅ logic/menuLogic.js (logique "menu du jour")
+✅ logic/eventLogic.js (Noël, Ramadan...)
+✅ logic/dateUtils.js (helpers dates)
+✅ ui/dashboardUI.js (tableau + filtres)
+✅ ui/eventUI.js (formulaire événements)
+✅ utils/limits.js (max 4 événements/jour)
+✅ utils/mediaUpload.js (images/vidéos)
+
+
+
+public
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu du Restaurant</title>
+  <link rel="stylesheet" href="css/menu-public.css">
+</head>
+<body>
+  <header class="menu-header">
+    <div class="container">
+      <h1>🍽️ Menu du Restaurant</h1>
+      <div class="today-menu">
+        <span id="todayLabel">Aujourd'hui :</span>
+        <span id="todayDate"></span>
+        <span id="menuTypeLabel"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="menu-main">
+    <div class="container">
+      
+      <!-- Message spécial événement -->
+      <section id="eventBanner" class="menu-banner event-banner" style="display: none;">
+        <div class="banner-content">
+          <h2 id="eventTitle">Événement spécial</h2>
+          <p id="eventDateInfo"></p>
+        </div>
+      </section>
+
+      <!-- Menu du jour -->
+      <section class="menu-section" id="dailyMenuSection">
+        <h2 id="menuSectionTitle">Menu du jour</h2>
+        <div id="menuItemsList" class="menu-grid">
+          <div class="loading">Chargement du menu...</div>
+        </div>
+      </section>
+
+      <!-- Message si pas de menu -->
+      <section id="noMenuSection" class="no-menu" style="display: none;">
+        <div class="no-menu-content">
+          <p>Aucun menu disponible pour aujourd'hui.</p>
+          <p>Revenez demain ou contactez-nous !</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- JS public (réutilise tes modules existants) -->
+  <script type="module" src="js/menuPublic.js"></script>
+</body>
+</html>
+
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  color: #2d3748;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Header */
+.menu-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.menu-header .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 1rem;
+}
+
+.menu-header h1 {
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.today-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: right;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+#todayLabel {
+  color: #4a5568;
+  font-size: 0.9rem;
+}
+
+/* Banner événement spécial */
+.menu-banner {
+  margin: 2rem 0;
+  padding: 2rem;
+  border-radius: 24px;
+  backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.event-banner {
+  background: linear-gradient(135deg, #ff6b6b, #feca57);
+  color: white;
+  box-shadow: 0 20px 40px rgba(255, 107, 107, 0.3);
+}
+
+.banner-content h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+/* Menu section */
+.menu-section {
+  margin: 2rem 0;
+}
+
+.menu-section h2 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 2.5rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Grille responsive des plats */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.menu-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+}
+
+.menu-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+}
+
+.menu-card.hidden {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.card-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+}
+
+.card-video {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+}
+
+.card-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: #2d3748;
+}
+
+.card-category {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.card-price {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #f6ad55;
+  margin-bottom: 1rem;
+}
+
+.card-event {
+  background: rgba(254, 202, 87, 0.15);
+  border: 1px solid rgba(254, 202, 87, 0.3);
+  color: #c05621;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* No menu */
+.no-menu {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.no-menu-content {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 3rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.no-menu-content p {
+  font-size: 1.3rem;
+  color: #4a5568;
+  margin-bottom: 1rem;
+}
+
+/* Loading */
+.loading {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .menu-header .container {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .menu-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .menu-card {
+    padding: 1.5rem;
+  }
+
+  .menu-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 0.75rem;
+  }
+}
+
+
+
+// js/menuPublic.js - Page publique du menu
+import { supabaseClient } from './supabaseClient.js';
+import { getDishesForPublicMenu, toDateOnlyString } from './logic/menuLogic.js';
+import { formatDateLongFr } from './logic/dateUtils.js';
+
+document.addEventListener('DOMContentLoaded', initPublicMenu);
+
+async function initPublicMenu() {
+  // Afficher la date du jour
+  updateTodayDisplay();
+  
+  // Charger et afficher le menu
+  await loadAndDisplayPublicMenu();
+}
+
+function updateTodayDisplay() {
+  const todayDateEl = document.getElementById('todayDate');
+  const todayLabelEl = document.getElementById('todayLabel');
+  
+  if (todayDateEl) {
+    todayDateEl.textContent = formatDateLongFr(new Date());
+  }
+}
+
+async function loadAndDisplayPublicMenu() {
+  const menuListEl = document.getElementById('menuItemsList');
+  const noMenuSection = document.getElementById('noMenuSection');
+  const eventBanner = document.getElementById('eventBanner');
+  const menuSection = document.getElementById('dailyMenuSection');
+
+  if (!menuListEl) return;
+
+  // Loading
+  menuListEl.innerHTML = '<div class="loading">Chargement du menu...</div>';
+  if (noMenuSection) noMenuSection.style.display = 'none';
+
+  try {
+    // Récupérer TOUS les plats
+    const { data, error } = await supabaseClient
+      .from('menu_items')
+      .select('*')
+      .eq('is_visible', true)
+      .order('category', { ascending: true })
+      .order('name');
+
+    if (error) {
+      console.error('Erreur chargement menu:', error);
+      menuListEl.innerHTML = '<div class="loading">Erreur de chargement</div>';
+      return;
+    }
+
+    const allDishes = Array.isArray(data) ? data : [];
+    const today = new Date();
+    const todayStr = toDateOnlyString(today);
+    
+    // 🔥 MAGIE : ta logique automatique !
+    const publicMenuDishes = getDishesForPublicMenu(allDishes, today);
+    
+    // Mettre à jour les titres
+    updateMenuDisplay(publicMenuDishes, todayStr);
+
+    if (publicMenuDishes.length === 0) {
+      // Pas de menu
+      menuListEl.innerHTML = '';
+      if (noMenuSection) {
+        noMenuSection.style.display = 'block';
+        menuSection.style.display = 'none';
+      }
+    } else {
+      // Afficher les plats
+      renderMenuDishes(menuListEl, publicMenuDishes);
+      if (noMenuSection) noMenuSection.style.display = 'none';
+      menuSection.style.display = 'block';
+    }
+
+  } catch (err) {
+    console.error('Erreur:', err);
+    menuListEl.innerHTML = '<div class="loading">Erreur de chargement</div>';
+  }
+}
+
+function updateMenuDisplay(dishes, todayStr) {
+  const menuTypeLabel = document.getElementById('menuTypeLabel');
+  const eventBanner = document.getElementById('eventBanner');
+  const eventTitleEl = document.getElementById('eventTitle');
+  const eventDateInfoEl = document.getElementById('eventDateInfo');
+  const menuSectionTitle = document.getElementById('menuSectionTitle');
+
+  if (!menuTypeLabel) return;
+
+  // Déterminer le type affiché
+  const today = new Date();
+  const eventsToday = dishes.filter(d => d.menu_type === 'evenement' && d.event_date === todayStr);
+  
+  if (eventsToday.length > 0) {
+    // ÉVÉNEMENT SPÉCIAL
+    menuTypeLabel.textContent = `🎉 Menu Événement Spécial`;
+    if (eventBanner) eventBanner.style.display = 'flex';
+    if (eventTitleEl) eventTitleEl.textContent = eventsToday[0].event_name || 'Événement spécial';
+    if (eventDateInfoEl) eventDateInfoEl.textContent = `le ${todayStr}`;
+    if (menuSectionTitle) menuSectionTitle.textContent = `${eventsToday[0].event_name || 'Menu spécial'}`;
+  } else {
+    // Menu normal
+    const menuType = getActiveMenuTypeForDate(today);
+    const labels = {
+      'evenement': 'Événement spécial',
+      'weekend': 'Menu Week-end',
+      'jour': 'Menu du jour',
+      'semaine': 'Menu Semaine'
+    };
+    menuTypeLabel.textContent = `🍽️ ${labels[menuType] || 'Menu du jour'}`;
+    
+    if (eventBanner) eventBanner.style.display = 'none';
+    if (menuSectionTitle) menuSectionTitle.textContent = labels[menuType] || 'Menu du jour';
+  }
+}
+
+function renderMenuDishes(container, dishes) {
+  container.innerHTML = '';
+
+  dishes.forEach(dish => {
+    const card = document.createElement('div');
+    card.className = `menu-card ${dish.is_visible === false ? 'hidden' : ''}`;
+    
+    const categoryLabel = formatCategoryLabel(dish.category);
+    const price = Number(dish.price).toFixed(2);
+    
+    card.innerHTML = `
+      ${dish.media_url ? getMediaHtml(dish.media_url, dish.media_type) : ''}
+      <div class="card-title">${dish.name}</div>
+      <span class="card-category">${categoryLabel}</span>
+      ${dish.menu_type === 'evenement' && dish.event_name ? `<div class="card-event">${dish.event_name}</div>` : ''}
+      <div class="card-price">${price} €</div>
+    `;
+    
+    container.appendChild(card);
+  });
+}
+
+function getMediaHtml(url, mediaType) {
+  if (mediaType === 'video') {
+    return `<video class="card-video" src="${url}" muted playsinline></video>`;
+  }
+  return `<img class="card-image" src="${url}" alt="Photo du plat" loading="lazy">`;
+}
+
+function formatCategoryLabel(cat) {
+  const labels = {
+    'entree': '🍽️ Entrée',
+    'plat': '🍲 Plat principal', 
+    'dessert': '🍰 Dessert',
+    'boisson': '🥤 Boisson',
+    'promo': '🔥 Promo'
+  };
+  return labels[cat] || cat;
+}
+
+function getActiveMenuTypeForDate(date) {
+  // Simplifié pour la page publique (utilise ta logique complète importée)
+  const day = date.getDay();
+  if (day === 0 || day === 6) return 'weekend';
+  return 'semaine';
+}
+
+
+
+menu-public.html (version mobile-first)
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu Restaurant</title>
+  <link rel="stylesheet" href="css/menu-public.css">
+</head>
+<body>
+  <header>
+    <h1>🍽️ Menu Aujourd'hui</h1>
+    <div class="today">
+      <span id="todayDate"></span>
+      <span id="menuType"></span>
+    </div>
+  </header>
+
+  <!-- Banner événement -->
+  <div id="eventBanner" class="banner" style="display:none;">
+    <h2 id="eventTitle">Événement spécial</h2>
+  </div>
+
+  <!-- Grille plats -->
+  <main id="menuList">
+    <div class="loading">Chargement...</div>
+  </main>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module" src="js/menuPublic.js"></script>
+</body>
+</html>
+
+css/menu-public.css (3ko, mobile-first ⚡)
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { 
+  font-family:system-ui,-apple-system,sans-serif; 
+  background:#f8fafc; 
+  color:#1e293b; 
+  line-height:1.4; 
+  padding:1rem; 
+  min-height:100vh;
+}
+
+/* Header ultra-compact */
+header { 
+  text-align:center; 
+  margin-bottom:1.5rem; 
+  background:rgba(255,255,255,0.9); 
+  padding:1rem; 
+  border-radius:16px; 
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+}
+h1 { 
+  font-size:1.6rem; 
+  font-weight:800; 
+  color:#1e40af; 
+  margin-bottom:0.5rem; 
+}
+.today { 
+  font-size:0.85rem; 
+  color:#64748b; 
+  font-weight:500; 
+}
+
+/* Banner événement */
+.banner { 
+  background:linear-gradient(135deg,#ef4444,#f59e0b); 
+  color:white; 
+  padding:1rem; 
+  border-radius:12px; 
+  margin-bottom:1.5rem; 
+  text-align:center; 
+}
+.banner h2 { font-size:1.3rem; margin:0; }
+
+/* Grille plats MOBILE : 2 images + 1 vidéo */
+main { display:grid; gap:1rem; }
+.plat { 
+  background:white; 
+  border-radius:16px; 
+  padding:1rem; 
+  box-shadow:0 6px 20px rgba(0,0,0,0.08); 
+  transition:transform 0.2s;
+}
+.plat:hover { transform:translateY(-2px); }
+
+/* Layout images/vidéo : 2 côte à côte + vidéo dessous */
+.media-row { 
+  display:grid; 
+  grid-template-columns:1fr 1fr; 
+  gap:0.5rem; 
+  margin-bottom:0.75rem; 
+}
+.media-row img { 
+  width:100%; 
+  height:100px; 
+  object-fit:cover; 
+  border-radius:8px; 
+}
+.media-video { 
+  grid-column:1/-1; 
+  width:100%; 
+  height:80px; 
+  object-fit:cover; 
+  border-radius:8px; 
+  background:#e2e8f0;
+}
+
+/* Texte plat */
+.nom { 
+  font-size:1.1rem; 
+  font-weight:700; 
+  margin-bottom:0.25rem; 
+  color:#1e293b; 
+}
+.categ { 
+  display:inline-block; 
+  background:#dbeafe; 
+  color:#1e40af; 
+  padding:0.2rem 0.6rem; 
+  border-radius:12px; 
+  font-size:0.75rem; 
+  font-weight:600; 
+  margin-bottom:0.5rem; 
+}
+.prix { 
+  font-size:1.4rem; 
+  font-weight:800; 
+  color:#ea580c; 
+  margin-bottom:0.25rem; 
+}
+.event-tag { 
+  background:rgba(254,202,87,0.2); 
+  color:#92400e; 
+  padding:0.25rem 0.75rem; 
+  border-radius:8px; 
+  font-size:0.8rem; 
+  font-weight:500;
+}
+
+/* Loading */
+.loading { 
+  grid-column:1/-1; 
+  text-align:center; 
+  padding:2rem; 
+  color:#64748b; 
+  font-size:1.1rem; 
+}
+
+/* EXTRA PETIT ÉCRAN */
+@media (max-width:400px) {
+  body { padding:0.75rem; }
+  .media-row img { height:80px; }
+  .media-video { height:70px; }
+  .plat { padding:0.75rem; }
+}
+
+/* GRAND ÉCRAN : 3 colonnes */
+@media (min-width:900px) {
+  body { padding:2rem; max-width:1000px; margin:0 auto; }
+  main { grid-template-columns:repeat(auto-fit,minmax(350px,1fr)); }
+  .media-row { grid-template-columns:1fr 1fr; }
+}
+
+js/menuPublic.js (version ultra-légère)
+
+// js/menuPublic.js - ULTRA LÉGER
+import { supabaseClient } from './supabaseClient.js';
+import { getDishesForPublicMenu, toDateOnlyString } from './logic/menuLogic.js';
+import { formatDateLongFr } from './logic/dateUtils.js';
+
+document.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+  document.getElementById('todayDate').textContent = formatDateLongFr(new Date());
+  await loadMenu();
+}
+
+async function loadMenu() {
+  const menuList = document.getElementById('menuList');
+  menuList.innerHTML = '<div class="loading">Chargement...</div>';
+
+  const { data, error } = await supabaseClient
+    .from('menu_items')
+    .select('*')
+    .eq('is_visible', true)
+    .order('category')
+    .order('name');
+
+  if (error) {
+    menuList.innerHTML = '<div class="loading">Erreur chargement</div>';
+    return;
+  }
+
+  const today = new Date();
+  const plats = getDishesForPublicMenu(data, today);
+  
+  updateHeader(plats, toDateOnlyString(today));
+  renderPlats(menuList, plats);
+}
+
+function updateHeader(plats, todayStr) {
+  const events = plats.filter(p => p.menu_type === 'evenement');
+  
+  if (events.length) {
+    document.getElementById('menuType').textContent = `🎉 ${events[0].event_name}`;
+    document.getElementById('eventBanner').style.display = 'block';
+    document.getElementById('eventTitle').textContent = events[0].event_name;
+  } else {
+    document.getElementById('menuType').textContent = getMenuLabel(new Date());
+  }
+}
+
+function renderPlats(container, plats) {
+  container.innerHTML = '';
+  
+  plats.forEach(plat => {
+    const div = document.createElement('div');
+    div.className = 'plat';
+    
+    // Layout 2 images + vidéo
+    let mediaHtml = '';
+    if (plat.media_url) {
+      if (plat.media_type === 'video') {
+        mediaHtml = `<video class="media-video" src="${plat.media_url}" muted playsinline></video>`;
+      } else {
+        // Simulation 2 images (1 seule dispo = dupliquée)
+        mediaHtml = `
+          <div class="media-row">
+            <img src="${plat.media_url}" alt="${plat.name}">
+            <img src="${plat.media_url}" alt="${plat.name}">
+            ${plat.media_type === 'video' ? `<video class="media-video" src="${plat.media_url}" muted playsinline></video>` : ''}
+          </div>
+        `;
+      }
+    }
+    
+    div.innerHTML = `
+      ${mediaHtml}
+      <div class="nom">${plat.name}</div>
+      <span class="categ">${getCateg(plat.category)}</span>
+      ${plat.menu_type === 'evenement' ? `<div class="event-tag">${plat.event_name}</div>` : ''}
+      <div class="prix">${Number(plat.price).toFixed(2)} €</div>
+    `;
+    
+    container.appendChild(div);
+  });
+}
+
+function getCateg(cat) {
+  const map = {entree:'🍽️ Entrée', plat:'🍲 Plat', dessert:'🍰 Dessert', boisson:'🥤 Boisson', promo:'🔥 Promo'};
+  return map[cat] || cat;
+}
+
+function getMenuLabel(date) {
+  const day = date.getDay();
+  return day === 0 || day === 6 ? '🍹 Menu Week-end' : '🍽️ Menu Semaine';
+}
+
+
+
+✅✅✅✅
+Swipe 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu Restaurant</title>
+  <link rel="stylesheet" href="css/menu-public.css">
+</head>
+<body>
+  <header>
+    <h1>🍽️ Menu Aujourd'hui</h1>
+    <div class="today">
+      <span id="todayDate"></span>
+      <span id="menuType"></span>
+    </div>
+  </header>
+
+  <div id="eventBanner" class="banner" style="display:none;">
+    <h2 id="eventTitle">Événement spécial</h2>
+  </div>
+
+  <main id="menuList">
+    <div class="loading">Chargement...</div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module" src="js/menuPublic.js"></script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu Restaurant</title>
+  <link rel="stylesheet" href="css/menu-public.css">
+</head>
+<body>
+  <header>
+    <h1>🍽️ Menu Aujourd'hui</h1>
+    <div class="today">
+      <span id="todayDate"></span>
+      <span id="menuType"></span>
+    </div>
+  </header>
+
+  <div id="eventBanner" class="banner" style="display:none;">
+    <h2 id="eventTitle">Événement spécial</h2>
+  </div>
+
+  <main id="menuList">
+    <div class="loading">Chargement...</div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module" src="js/menuPublic.js"></script>
+</body>
+</html>
+
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { 
+  font-family:system-ui,-apple-system,sans-serif; 
+  background:#f8fafc; 
+  color:#1e293b; 
+  line-height:1.4; 
+  padding:1rem; 
+  min-height:100vh;
+  overscroll-behavior-x:contain; /* Empêche le scroll page lors du swipe */
+}
+
+header { 
+  text-align:center; 
+  margin-bottom:1.5rem; 
+  background:rgba(255,255,255,0.9); 
+  padding:1rem; 
+  border-radius:16px; 
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+}
+h1 { font-size:1.6rem; font-weight:800; color:#1e40af; margin-bottom:0.5rem; }
+.today { font-size:0.85rem; color:#64748b; font-weight:500; }
+
+.banner { 
+  background:linear-gradient(135deg,#ef4444,#f59e0b); 
+  color:white; 
+  padding:1rem; 
+  border-radius:12px; 
+  margin-bottom:1.5rem; 
+  text-align:center; 
+}
+.banner h2 { font-size:1.3rem; margin:0; }
+
+/* 🔥 CAROUSEL SWIPE HORIZONTAL */
+.plat { 
+  background:white; 
+  border-radius:16px; 
+  padding:1rem; 
+  box-shadow:0 6px 20px rgba(0,0,0,0.08); 
+  margin-bottom:1rem; 
+  scroll-snap-align:start;
+}
+
+/* Container swipe horizontal */
+.swipe-container {
+  display:flex; 
+  overflow-x:auto; 
+  scroll-snap-type:x mandatory; 
+  gap:1rem; 
+  padding:0.5rem 0;
+  scrollbar-width:none; /* Firefox */
+  -ms-overflow-style:none; /* IE/Edge */
+  scroll-behavior:smooth;
+}
+.swipe-container::-webkit-scrollbar { display:none; } /* Chrome/Safari */
+
+/* Snap parfait + momentum */
+.swipe-container {
+  -webkit-overflow-scrolling:touch; /* iOS smooth */
+  scroll-padding-left:1rem;
+}
+
+/* Médias dans carousel */
+.swipe-medias {
+  display:flex; 
+  overflow:hidden; 
+  border-radius:12px; 
+  margin-bottom:0.75rem;
+  height:110px; /* Hauteur fixe pour alignement parfait */
+  scroll-snap-type:x mandatory;
+  gap:0.5rem;
+}
+
+.swipe-medias img, .swipe-medias video { 
+  flex:0 0 48%; 
+  height:100%; 
+  object-fit:cover; 
+  border-radius:8px; 
+  scroll-snap-align:center;
+}
+
+.swipe-medias video { 
+  background:#e2e8f0; 
+}
+
+/* Indicateurs visuels swipe */
+.swipe-hint {
+  position:absolute; 
+  top:8px; 
+  right:8px; 
+  background:rgba(0,0,0,0.7); 
+  color:white; 
+  padding:0.2rem 0.5rem; 
+  border-radius:12px; 
+  font-size:0.7rem; 
+  z-index:10;
+}
+
+/* Texte */
+.nom { font-size:1.1rem; font-weight:700; margin-bottom:0.25rem; color:#1e293b; }
+.categ { 
+  display:inline-block; 
+  background:#dbeafe; 
+  color:#1e40af; 
+  padding:0.2rem 0.6rem; 
+  border-radius:12px; 
+  font-size:0.75rem; 
+  font-weight:600; 
+  margin-bottom:0.5rem; 
+}
+.prix { font-size:1.4rem; font-weight:800; color:#ea580c; margin-bottom:0.25rem; }
+.event-tag { 
+  background:rgba(254,202,87,0.2); 
+  color:#92400e; 
+  padding:0.25rem 0.75rem; 
+  border-radius:8px; 
+  font-size:0.8rem; 
+  font-weight:500;
+}
+
+.loading { text-align:center; padding:2rem; color:#64748b; font-size:1.1rem; }
+
+/* EXTRA PETIT */
+@media (max-width:400px) {
+  body { padding:0.75rem; }
+  .swipe-medias { height:95px; }
+}
+
+/* DESKTOP : grille normale */
+@media (min-width:900px) {
+  body { padding:2rem; max-width:1000px; margin:0 auto; }
+  .swipe-container { display:grid; grid-template-columns:repeat(auto-fit,minmax(350px,1fr)); scroll-snap-type:none; gap:1rem; }
+  .swipe-medias { 
+    display:grid; 
+    grid-template-columns:1fr 1fr; 
+    height:auto; 
+    gap:0.5rem;
+  }
+  .swipe-medias img, .swipe-medias video { flex:none; height:120px; }
+}
+
+
+import { supabaseClient } from './supabaseClient.js';
+import { getDishesForPublicMenu, toDateOnlyString } from './logic/menuLogic.js';
+import { formatDateLongFr } from './logic/dateUtils.js';
+
+document.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+  document.getElementById('todayDate').textContent = formatDateLongFr(new Date());
+  await loadMenu();
+}
+
+async function loadMenu() {
+  const menuList = document.getElementById('menuList');
+  menuList.innerHTML = '<div class="loading">Chargement...</div>';
+
+  const { data, error } = await supabaseClient
+    .from('menu_items')
+    .select('*')
+    .eq('is_visible', true)
+    .order('category')
+    .order('name');
+
+  if (error) {
+    menuList.innerHTML = '<div class="loading">Erreur</div>';
+    return;
+  }
+
+  const today = new Date();
+  const plats = getDishesForPublicMenu(data, today);
+  
+  updateHeader(plats, toDateOnlyString(today));
+  renderPlats(menuList, plats);
+}
+
+function updateHeader(plats, todayStr) {
+  const events = plats.filter(p => p.menu_type === 'evenement');
+  
+  if (events.length) {
+    document.getElementById('menuType').textContent = `🎉 ${events[0].event_name}`;
+    document.getElementById('eventBanner').style.display = 'block';
+    document.getElementById('eventTitle').textContent = events[0].event_name;
+  } else {
+    document.getElementById('menuType').textContent = getMenuLabel(new Date());
+  }
+}
+
+function renderPlats(container, plats) {
+  container.innerHTML = '<div class="swipe-container" id="swipeContainer"></div>';
+  const swipeContainer = document.getElementById('swipeContainer');
+  
+  plats.forEach(plat => {
+    const platDiv = document.createElement('div');
+    platDiv.className = 'plat';
+    
+    // 🔥 MULTI-IMAGES SWIPE ou vidéo
+    const mediasHtml = renderSwipeMedias(plat);
+    
+    platDiv.innerHTML = `
+      <div class="swipe-medias">${mediasHtml}</div>
+      <div class="nom">${plat.name}</div>
+      <span class="categ">${getCateg(plat.category)}</span>
+      ${plat.menu_type === 'evenement' ? `<div class="event-tag">${plat.event_name}</div>` : ''}
+      <div class="prix">${Number(plat.price).toFixed(2)} €</div>
+    `;
+    
+    swipeContainer.appendChild(platDiv);
+  });
+  
+  // Amélioration swipe : snap + indicateur
+  enhanceSwipe();
+}
+
+function renderSwipeMedias(plat) {
+  if (!plat.media_url) return '';
+  
+  let medias = [];
+  
+  // 1 image → dupliquée pour effet "galerie"
+  if (plat.media_type !== 'video') {
+    medias = [
+      `<img src="${plat.media_url}" alt="${plat.name}" loading="lazy">`,
+      `<img src="${plat.media_url}" alt="${plat.name}" loading="lazy">`
+    ];
+  } else {
+    medias = [`<video class="media-video" src="${plat.media_url}" muted playsinline loading="lazy"></video>`];
+  }
+  
+  // Ajout d'une 3e image/vidéo pour swipe plus long (effet pro)
+  medias.push(medias[0]);
+  
+  return medias.join('');
+}
+
+function enhanceSwipe() {
+  const container = document.getElementById('swipeContainer');
+  if (!container) return;
+  
+  // Auto-snap au plat le plus proche après swipe
+  let isScrolling;
+  container.addEventListener('scroll', () => {
+    clearTimeout(isScrolling);
+    isScrolling = setTimeout(() => {
+      const scrollLeft = container.scrollLeft;
+      const platWidth = container.children[0]?.offsetWidth + 16; // + gap
+      const snapIndex = Math.round(scrollLeft / platWidth);
+      container.scrollTo({
+        left: snapIndex * platWidth,
+        behavior: 'smooth'
+      });
+    }, 150);
+  }, { passive: true });
+}
+
+function getCateg(cat) {
+  const map = {entree:'🍽️ Entrée', plat:'🍲 Plat', dessert:'🍰 Dessert', boisson:'🥤 Boisson', promo:'🔥 Promo'};
+  return map[cat] || cat;
+}
+
+function getMenuLabel(date) {
+  const day = date.getDay();
+  return day === 0 || day === 6 ? '🍹 Week-end' : '🍽️ Semaine';
+}
